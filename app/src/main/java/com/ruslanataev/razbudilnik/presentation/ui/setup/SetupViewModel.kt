@@ -17,8 +17,12 @@ class SetupViewModel : ViewModel() {
         }
     }
 
-    fun onTimeClick() {
-        // Temporary stub for MVP wiring.
-        // Next step: open a time picker or emit a one-time event.
+    fun onTimeSelected(hour: Int, minute: Int) {
+        _state.update { currentState ->
+            currentState.copy(
+                hour = hour,
+                minute = minute,
+            )
+        }
     }
 }

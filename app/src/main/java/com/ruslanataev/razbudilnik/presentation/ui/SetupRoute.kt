@@ -17,7 +17,7 @@ fun SetupRoute(
 
     SetupScreen(
         state = state,
-        onTimeClick = viewModel::onTimeClick,
+        onTimeSelected = viewModel::onTimeSelected,
         onEnabledChange = viewModel::onEnabledChange,
         modifier = modifier,
     )
