@@ -17,7 +17,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             RazbudilnikTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    RootScreen(
+                    SetupRoute(
                         modifier = Modifier.padding(innerPadding)
                     )
                 }

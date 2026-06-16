@@ -9,7 +9,7 @@ import com.ruslanataev.razbudilnik.presentation.ui.setup.SetupScreen
 import com.ruslanataev.razbudilnik.presentation.ui.setup.SetupViewModel
 
 @Composable
-fun RootScreen(
+fun SetupRoute(
     modifier: Modifier = Modifier,
     viewModel: SetupViewModel = viewModel(),
 ) {
@@ -17,6 +17,7 @@ fun RootScreen(
 
     SetupScreen(
         state = state,
+        onTimeClick = viewModel::onTimeClick,
         onEnabledChange = viewModel::onEnabledChange,
         modifier = modifier,
     )

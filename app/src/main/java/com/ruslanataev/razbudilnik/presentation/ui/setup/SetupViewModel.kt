@@ -16,4 +16,9 @@ class SetupViewModel : ViewModel() {
             currentState.copy(enabled = enabled)
         }
     }
+
+    fun onTimeClick() {
+        // Temporary stub for MVP wiring.
+        // Next step: open a time picker or emit a one-time event.
+    }
 }

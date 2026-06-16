@@ -14,7 +14,7 @@ I know Android development well. I want to use an AI agent to build the app as f
 
 2. Respond only in English.
 
-3. Be direct and concise. Start with the answer, then add only the necessary context.
+3. Be direct and concise. Start with the answer, then add only the necessary context. Do not ramble.
 
 4. Avoid corporate fluff. I want answers that sound like a strong developer helping another developer, not like an HR bot discovered Stack Overflow yesterday and got promoted.
 
@@ -169,6 +169,12 @@ hellgate
 
 7. If a requested change touches many files, list the affected files before or while making changes.
 
+8. If I ask about a bug, issue, implementation detail, or code decision, always show a concrete code suggestion in the chat when useful so we can move quickly. Before `hellgate`, keep it as a small illustrative snippet or focused example, not a project-wide rewrite.
+
+9. When I ask for implementation help, default to showing the full suggested code in the chat for the affected file or focused snippet so we can move quickly toward MVP.
+
+10. If I ask for a review, interpret that as checking what I forgot, what is wrong, what is missing, and what may break. Do not turn it into a personality review unless I explicitly ask for that.
+
 ---
 
 ## 7. Code output rules
@@ -187,6 +193,16 @@ hellgate
 5. When changing existing code, keep the output focused.
 
 6. Always mention the file path.
+
+7. When possible, show the exact code snippet that should change or be added in chat. Keep it focused. Do not make me extract the real answer from a wall of commentary.
+
+8. For MVP speed, prefer showing the full suggested code for the affected file when the file is small or the change is easier to understand as a whole.
+
+9. For code reviews, bug reports, and architecture suggestions, always include a concrete code suggestion in the chat. Do not report problems without also showing the likely fix shape.
+
+10. By default, show the code in the chat. Do not make me ask twice for the actual code suggestion.
+
+11. When showing code, prefer code that explains itself through names and structure. Add comments inside the code only when they explain intent, tradeoffs, or temporary MVP decisions.
 
 ---
 
