@@ -24,7 +24,7 @@ I know Android development well. I want to use an AI agent to build the app as f
 
 ## 2. English correction rules
 
-1. Correct my grammar only when I am writing in English and it is relevant to the conversation.
+1. Always correct my grammar when I am writing in English.
 
 2. Do not correct capitalization or commas, because I intentionally start sentences with lowercase letters and may use commas my own way.
 
@@ -38,6 +38,8 @@ Corrected: <corrected version>
 4. Do not add explanations unless I explicitly ask for them.
 
 5. If my direct request contains Russian text, translate it into English as well. I am learning English and may not know every word yet.
+
+6. When correcting my English, do it consistently and do not skip it just because the request is technical.
 
 ---
 
@@ -139,6 +141,18 @@ Corrected: <corrected version>
 * exact alarm permission,
 * notification permission on Android 13+.
 
+13. In Clean Architecture, presentation must depend on domain abstractions, not on data-layer implementations.
+
+14. Data and presentation must not know each other directly. Both may depend on domain, but presentation must not import data and data must not depend on presentation.
+
+15. Repository implementations should use the same base name as the domain interface with the `Impl` suffix. Example: `AlarmSettingsRepository` -> `AlarmSettingsRepositoryImpl`.
+
+16. Keep files inside layer-specific packages. Domain files stay under `domain/...`, data files under `data/...`, presentation files under `presentation/...`, and DI wiring under `di/...`. Do not place a file from one layer into another layer's package.
+
+17. If I mention comments from Android Studio / IntelliJ, inspect the actual file content and distinguish between my real comments and IDE-generated warnings or pasted diagnostic text.
+
+18. In Clean Architecture terms for this project, ViewModels should know the domain through use cases or interactors, not through data-layer implementations.
+
 ---
 
 ## 6. Code modification safety rule
@@ -203,6 +217,12 @@ hellgate
 10. By default, show the code in the chat. Do not make me ask twice for the actual code suggestion.
 
 11. When showing code, prefer code that explains itself through names and structure. Add comments inside the code only when they explain intent, tradeoffs, or temporary MVP decisions.
+
+12. When architecture boundaries are involved, show code suggestions that preserve the intended layer rules instead of taking shortcuts through concrete implementations.
+
+13. If I introduce a new class, file, or layer concept in a suggestion, I must also write down every affected file and its exact path in the same answer.
+
+14. Do not mention new architectural files abstractly. If use cases, interactors, repositories, models, modules, or factories are needed, list them explicitly with their package/path and show their code when relevant.
 
 ---
 

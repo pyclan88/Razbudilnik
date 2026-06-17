@@ -31,7 +31,7 @@ fun SetupScreen(
 ) {
     var isTimePickerVisible by remember { mutableStateOf(false) }
 
-    val timmePickerState = rememberTimePickerState(
+    val timePickerState = rememberTimePickerState(
         initialHour = state.hour,
         initialMinute = state.minute,
         is24Hour = true,
@@ -48,7 +48,7 @@ fun SetupScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onTimeSelected(timmePickerState.hour, timmePickerState.minute)
+                        onTimeSelected(timePickerState.hour, timePickerState.minute)
                         isTimePickerVisible = false
                     }
                 ) {
@@ -65,7 +65,7 @@ fun SetupScreen(
                 }
             }
         ) {
-            TimeInput(state = timmePickerState)
+            TimeInput(state = timePickerState)
         }
     }
 

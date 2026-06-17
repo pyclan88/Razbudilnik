@@ -1,17 +1,16 @@
-package com.ruslanataev.razbudilnik.presentation.ui
+package com.ruslanataev.razbudilnik.presentation.ui.setup
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ruslanataev.razbudilnik.presentation.ui.setup.SetupScreen
-import com.ruslanataev.razbudilnik.presentation.ui.setup.SetupViewModel
 
 @Composable
 fun SetupRoute(
     modifier: Modifier = Modifier,
-    viewModel: SetupViewModel = viewModel(),
+    viewModel: SetupViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
