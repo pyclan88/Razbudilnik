@@ -2,7 +2,6 @@ package com.ruslanataev.razbudilnik.presentation.ui.setup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ruslanataev.razbudilnik.domain.setup.api.AlarmSettingsRepository
 import com.ruslanataev.razbudilnik.domain.setup.usecases.ObserveAlarmSettingsUseCase
 import com.ruslanataev.razbudilnik.domain.setup.usecases.SaveAlarmEnabledUseCase
 import com.ruslanataev.razbudilnik.domain.setup.usecases.SaveAlarmTimeUseCase
