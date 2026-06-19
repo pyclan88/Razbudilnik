@@ -18,7 +18,7 @@ class AlarmSchedulerImpl @Inject constructor(
 ) : AlarmScheduler {
 
     private val alarmManager: AlarmManager =
-        context.getSystemService((AlarmManager::class.java))
+        context.getSystemService(AlarmManager::class.java)
 
     override suspend fun schedule(hour: Int, minute: Int): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {

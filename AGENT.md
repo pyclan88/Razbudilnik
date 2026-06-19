@@ -153,6 +153,8 @@ Corrected: <corrected version>
 
 18. In Clean Architecture terms for this project, ViewModels should know the domain through use cases or interactors, not through data-layer implementations.
 
+19. Activities and other UI entry points belong to the presentation layer. Non-UI Android framework entry points such as BroadcastReceiver and Service belong to an outer runtime/framework package, not to data, domain, or pure presentation state packages.
+
 ---
 
 ## 6. Code modification safety rule
