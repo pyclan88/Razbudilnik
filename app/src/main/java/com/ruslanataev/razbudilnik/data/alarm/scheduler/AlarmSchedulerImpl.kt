@@ -1,16 +1,17 @@
 package com.ruslanataev.razbudilnik.data.alarm.scheduler
 
 import android.app.AlarmManager
+import android.app.AlarmManager.RTC_WAKEUP
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import com.ruslanataev.razbudilnik.runtime.alarm.AlarmReceiver
 import com.ruslanataev.razbudilnik.domain.alarm.api.AlarmScheduler
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.LocalDateTime
 import java.time.ZoneId
 import javax.inject.Inject
-import kotlin.jvm.java
 
 class AlarmSchedulerImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -28,7 +29,7 @@ class AlarmSchedulerImpl @Inject constructor(
         val triggerAtMillis = calculateTriggerAtMillis(hour, minute)
 
         alarmManager.setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
+            RTC_WAKEUP,
             triggerAtMillis,
             pendingIntent,
         )
