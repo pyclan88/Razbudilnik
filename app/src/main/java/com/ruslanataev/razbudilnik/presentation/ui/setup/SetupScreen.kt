@@ -13,6 +13,7 @@ import androidx.compose.material3.TimeInput
 import androidx.compose.material3.TimePickerDialog
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,15 +28,21 @@ fun SetupScreen(
     state: SetupUiState,
     onTimeSelected: (hour: Int, minute: Int) -> Unit,
     onEnabledChange: (Boolean) -> Unit,
+    onOpenExactAlarmSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var isTimePickerVisible by remember { mutableStateOf(false) }
 
     val timePickerState = rememberTimePickerState(
-        initialHour = state.hour,
-        initialMinute = state.minute,
         is24Hour = true,
     )
+
+    LaunchedEffect(isTimePickerVisible, state.hour, state.minute) {
+        if (isTimePickerVisible) {
+            timePickerState.hour = state.hour
+            timePickerState.minute = state.minute
+        }
+    }
 
     if (isTimePickerVisible) {
         TimePickerDialog(
@@ -87,6 +94,18 @@ fun SetupScreen(
             checked = state.enabled,
             onCheckedChange = onEnabledChange,
         )
+
+        state.statusMessage?.let { statusMessage ->
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(statusMessage)
+
+                TextButton(
+                    onClick = onOpenExactAlarmSettingsClick,
+                ) {
+                    Text("Grant exact alarm access")
+                }
+            }
+        }
     }
 }
 
@@ -97,5 +116,6 @@ private fun SetupScreenPreview() {
         state = SetupUiState(),
         onTimeSelected = { _, _ -> },
         onEnabledChange = {},
+        onOpenExactAlarmSettingsClick = {}
     )
 }

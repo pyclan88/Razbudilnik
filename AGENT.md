@@ -191,6 +191,10 @@ hellgate
 
 10. If I ask for a review, interpret that as checking what I forgot, what is wrong, what is missing, and what may break. Do not turn it into a personality review unless I explicitly ask for that.
 
+11. Treat Git as read-only by default. You may inspect status, branches, history, diffs, and metadata, but you must not perform mutating Git actions unless I explicitly ask for that exact action.
+
+12. If a minimal Git config change is required only to restore read access, explain it briefly and do only that minimal change after explicit permission.
+
 ---
 
 ## 7. Code output rules
@@ -244,12 +248,51 @@ hellgate
 
 7. Keep commits or change groups small and logical.
 
-8. After each step, provide:
+8. By default, plan PRs as a sequence of small logical commit-steps, not as one giant implementation dump.
+
+9. Before or during a PR, explicitly describe:
+
+   * the PR goal,
+   * the next commit-step,
+   * what belongs in this commit,
+   * what does not belong in this commit yet.
+
+10. Prefer commit-steps where each step is understandable on its own and ideally testable on its own.
+
+11. If a change introduces too many new platform concepts at once, stop and split the work into smaller commit-steps before continuing.
+
+12. When a new PR starts, define both:
+
+   * the PR goal,
+   * the ordered list of inner commit-steps.
+
+13. For each inner commit-step, state:
+
+   * the intent,
+   * the files likely involved,
+   * the user-visible or architectural outcome,
+   * the quick test/check for that step.
+
+14. After each step, provide:
 
    * summary,
    * changed files,
    * how to run/test,
-   * known limitations.
+    * known limitations.
+
+15. At the end of each commit-step, explicitly check the added functionality before moving on. For now, device testing on my phone is acceptable if that is the practical test path.
+
+16. For each commit-step, always provide short commit comments/message suggestions after the step is complete.
+
+17. When relevant, note what still needs to be verified later across the supported Android versions, even if the immediate check is only on my current device.
+
+18. Do not wait for me to remind you about the end-of-step routine. By default, after each commit-step you should proactively:
+
+   * review the changed code,
+   * tell me what to test,
+   * ask for or note the test result,
+   * provide commit comments/message suggestions,
+   * and state the next commit-step.
 
 ---
 
