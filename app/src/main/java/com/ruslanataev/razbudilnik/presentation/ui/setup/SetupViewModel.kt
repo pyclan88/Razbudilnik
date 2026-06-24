@@ -42,16 +42,6 @@ class SetupViewModel @Inject constructor(
         }
     }
 
-    fun onExactAlarmAccessChecked(canScheduleExactAlarm: Boolean) {
-        if (!canScheduleExactAlarm) {
-            return
-        }
-
-        _state.update { currentState ->
-            currentState.copy(statusMessage = null)
-        }
-    }
-
     fun onEnabledChange(enabled: Boolean) {
         val currentState = _state.value
 
@@ -65,6 +55,7 @@ class SetupViewModel @Inject constructor(
                         latestState.copy(
                             enabled = false,
                             statusMessage = "Exact alarms are unavailable on this device right now.",
+                            shouldEnableAfterPermissionGrant = true,
                         )
                     }
                     return@launch
@@ -79,8 +70,43 @@ class SetupViewModel @Inject constructor(
                 latestState.copy(
                     enabled = enabled,
                     statusMessage = null,
+                    shouldEnableAfterPermissionGrant = false,
                 )
             }
+        }
+    }
+
+    fun onExactAlarmAccessChecked(canScheduleExactAlarm: Boolean) {
+        if (!canScheduleExactAlarm) {
+            return
+        }
+
+        val currentState = _state.value
+
+        viewModelScope.launch {
+            if (currentState.shouldEnableAfterPermissionGrant) {
+                val wasScheduled = scheduleAlarmUseCase(currentState.hour, currentState.minute)
+                if (wasScheduled) {
+                    saveAlarmEnabledUseCase(true)
+
+                    _state.update { latestState ->
+                        latestState.copy(
+                            enabled = true,
+                            statusMessage = null,
+                            shouldEnableAfterPermissionGrant = false,
+                        )
+                    }
+                    return@launch
+                }
+            }
+
+            _state.update { latestState ->
+                latestState.copy(
+                    statusMessage = null,
+                    shouldEnableAfterPermissionGrant = false,
+                )
+            }
+
         }
     }
 
@@ -113,6 +139,7 @@ class SetupViewModel @Inject constructor(
                         minute = minute,
                         enabled = false,
                         statusMessage = "Exact alarms are unavailable on this device right now.",
+                        shouldEnableAfterPermissionGrant = true
                     )
                 }
             }
