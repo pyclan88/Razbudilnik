@@ -24,7 +24,7 @@ class SetupViewModel @Inject constructor(
     private val cancelAlarmUseCase: CancelAlarmUseCase,
 ) : ViewModel() {
 
-    private val _state: MutableStateFlow<SetupUiState> = MutableStateFlow(SetupUiState())
+    private val _state: MutableStateFlow<SetupUiState> = MutableStateFlow(SetupUiState.initial())
     val state: StateFlow<SetupUiState> = _state.asStateFlow()
 
     init {

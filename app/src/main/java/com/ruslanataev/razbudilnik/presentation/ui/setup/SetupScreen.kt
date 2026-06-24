@@ -113,7 +113,7 @@ fun SetupScreen(
 @Composable
 private fun SetupScreenPreview() {
     SetupScreen(
-        state = SetupUiState(),
+        state = SetupUiState.initial(),
         onTimeSelected = { _, _ -> },
         onEnabledChange = {},
         onOpenExactAlarmSettingsClick = {}
