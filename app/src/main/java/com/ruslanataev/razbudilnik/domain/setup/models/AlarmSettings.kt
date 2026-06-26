@@ -1,7 +1,7 @@
 package com.ruslanataev.razbudilnik.domain.setup.models
 
 data class AlarmSettings(
-    val hour: Int = 7,
-    val minute: Int = 0,
-    val enabled: Boolean = true,
+    val hour: Int,
+    val minute: Int,
+    val enabled: Boolean,
 )

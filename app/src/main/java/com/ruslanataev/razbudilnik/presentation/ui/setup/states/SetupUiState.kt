@@ -1,4 +1,4 @@
-package com.ruslanataev.razbudilnik.presentation.ui.setup
+package com.ruslanataev.razbudilnik.presentation.ui.setup.states
 
 import java.time.LocalTime
 

@@ -1,4 +1,4 @@
-package com.ruslanataev.razbudilnik.presentation.ui.setup
+package com.ruslanataev.razbudilnik.presentation.ui.setup.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,6 +7,9 @@ import com.ruslanataev.razbudilnik.domain.alarm.usecases.ScheduleAlarmUseCase
 import com.ruslanataev.razbudilnik.domain.setup.usecases.ObserveAlarmSettingsUseCase
 import com.ruslanataev.razbudilnik.domain.setup.usecases.SaveAlarmEnabledUseCase
 import com.ruslanataev.razbudilnik.domain.setup.usecases.SaveAlarmTimeUseCase
+import com.ruslanataev.razbudilnik.presentation.ui.setup.mappers.AlarmSettingsToAlarmSettingsVOMapper
+import com.ruslanataev.razbudilnik.presentation.ui.setup.models.AlarmSettingsVO
+import com.ruslanataev.razbudilnik.presentation.ui.setup.states.SetupUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,13 +32,13 @@ class SetupViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            observeAlarmSettingsUseCase().collect { preferences ->
+            observeAlarmSettingsUseCase().collect { alarmSettings ->
+                val alarmSettingsVO = AlarmSettingsToAlarmSettingsVOMapper.map(alarmSettings)
+
                 _state.update { currentState ->
-                    currentState.copy(
-                        hour = preferences.hour,
-                        minute = preferences.minute,
-                        enabled = preferences.enabled,
-                        statusMessage = null
+                    currentState.copyFrom(
+                        alarmSettingsVO = alarmSettingsVO,
+                        statusMessage = null,
                     )
                 }
             }
@@ -144,5 +147,19 @@ class SetupViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun SetupUiState.copyFrom(
+        alarmSettingsVO: AlarmSettingsVO,
+        statusMessage: String? = this.statusMessage,
+        shouldEnableAfterPermissionGrant: Boolean = this.shouldEnableAfterPermissionGrant,
+    ): SetupUiState {
+        return copy(
+            hour = alarmSettingsVO.hour,
+            minute = alarmSettingsVO.minute,
+            enabled = alarmSettingsVO.enabled,
+            statusMessage = statusMessage,
+            shouldEnableAfterPermissionGrant = shouldEnableAfterPermissionGrant,
+        )
     }
 }
