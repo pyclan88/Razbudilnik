@@ -2,7 +2,7 @@
 
 ## Current State
 
-Project path: `C:\Users\Asus\AndroidStudioProjects\Razbudilnik`
+Project path on this PC: `C:\Users\Pyclan\AndroidStudioProjects\Razbudilnik`
 
 Current branch: `3-alarm-setup-scheduling`
 
