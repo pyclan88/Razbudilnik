@@ -155,6 +155,8 @@ Corrected: <corrected version>
 
 19. Activities and other UI entry points belong to the presentation layer. Non-UI Android framework entry points such as BroadcastReceiver and Service belong to an outer runtime/framework package, not to data, domain, or pure presentation state packages.
 
+20. Always check the project's `minSdk`, `targetSdk`, and relevant Android API levels before suggesting or using platform APIs. If an API is newer than `minSdk`, include the required version guard or use a backward-compatible API.
+
 ---
 
 ## 6. Code modification safety rule
