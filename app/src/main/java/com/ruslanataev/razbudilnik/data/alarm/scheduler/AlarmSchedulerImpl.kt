@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.Build
 import com.ruslanataev.razbudilnik.runtime.alarm.AlarmReceiver
 import com.ruslanataev.razbudilnik.domain.alarm.api.AlarmScheduler
+import com.ruslanataev.razbudilnik.presentation.ui.MainActivity
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -25,20 +26,23 @@ class AlarmSchedulerImpl @Inject constructor(
             return false
         }
 
-        val pendingIntent = createPendingIntent(hour, minute)
         val triggerAtMillis = calculateTriggerAtMillis(hour, minute)
 
-        alarmManager.setExactAndAllowWhileIdle(
-            RTC_WAKEUP,
+        val alarmClockInfo = AlarmManager.AlarmClockInfo(
             triggerAtMillis,
-            pendingIntent,
+            createShowAlarmPendingIntent(),
+        )
+
+        alarmManager.setAlarmClock(
+            alarmClockInfo,
+            createTriggerAlarmPendingIntent(hour, minute)
         )
 
         return true
     }
 
     override suspend fun cancel() {
-        alarmManager.cancel(createPendingIntent())
+        alarmManager.cancel(createTriggerAlarmPendingIntent())
     }
 
     private fun calculateTriggerAtMillis(hour: Int, minute: Int): Long {
@@ -61,7 +65,7 @@ class AlarmSchedulerImpl @Inject constructor(
             .toEpochMilli()
     }
 
-    private fun createPendingIntent(
+    private fun createTriggerAlarmPendingIntent(
         hour: Int? = null,
         minute: Int? = null,
     ): PendingIntent {
@@ -78,13 +82,27 @@ class AlarmSchedulerImpl @Inject constructor(
 
         return PendingIntent.getBroadcast(
             context,
-            REQUEST_CODE_ALARM,
+            REQUEST_CODE_TRIGGER_ALARM,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
     }
 
+    private fun createShowAlarmPendingIntent(): PendingIntent {
+        val intent = context.packageManager
+            .getLaunchIntentForPackage(context.packageName)
+            ?: Intent()
+
+        return PendingIntent.getActivity(
+            context,
+            REQUEST_CODE_SHOW_ALARM,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
     private companion object {
-        const val REQUEST_CODE_ALARM = 1001
+        const val REQUEST_CODE_TRIGGER_ALARM = 1001
+        const val REQUEST_CODE_SHOW_ALARM = 1002
     }
 }

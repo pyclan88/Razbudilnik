@@ -5,11 +5,14 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.ruslanataev.razbudilnik.data.setup.mappers.AlarmSettingsDtoToAlarmSettingsMapper
+import com.ruslanataev.razbudilnik.data.setup.models.AlarmSettingsDto
 import com.ruslanataev.razbudilnik.domain.setup.api.AlarmSettingsRepository
 import com.ruslanataev.razbudilnik.domain.setup.models.AlarmSettings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.time.LocalTime
 import javax.inject.Inject
 
 private val Context.dataStore by preferencesDataStore(name = "alarm_preferences")
@@ -20,11 +23,15 @@ class AlarmSettingsRepositoryImpl @Inject constructor(
 
     override val settings: Flow<AlarmSettings> =
         context.dataStore.data.map { prefs ->
-            AlarmSettings(
-                hour = prefs[HOUR_KEY] ?: 7,
-                minute = prefs[MINUTE_KEY] ?: 0,
-                enabled = prefs[ENABLED_KEY] ?: true,
+            val now = LocalTime.now()
+
+            val alarmSettingsDto = AlarmSettingsDto(
+                hour = prefs[HOUR_KEY] ?: now.hour,
+                minute = prefs[MINUTE_KEY] ?: now.minute,
+                enabled = prefs[ENABLED_KEY] ?: false,
             )
+
+            AlarmSettingsDtoToAlarmSettingsMapper.map(alarmSettingsDto)
         }
 
     override suspend fun saveTime(hour: Int, minute: Int) {
