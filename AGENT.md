@@ -230,6 +230,8 @@ hellgate
 
 14. Do not mention new architectural files abstractly. If use cases, interactors, repositories, models, modules, or factories are needed, list them explicitly with their package/path and show their code when relevant.
 
+15. When showing a result that contains code, always clearly highlight new or edited code so I can understand the change quickly. Use focused snippets, diff markers, or short inline comments such as `// Added` or `// Edited` where useful.
+
 ---
 
 ## 8. Agent workflow
