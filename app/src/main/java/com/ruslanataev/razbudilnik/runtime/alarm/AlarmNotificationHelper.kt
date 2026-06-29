@@ -31,4 +31,8 @@ class AlarmNotificationHelper(
     companion object {
         const val ALARM_CHANNEL_ID = "alarm"
     }
+
+    fun showAlarmNotification(hour: Int, minute: Int) {
+        createAlarmChannel()
+    }
 }
