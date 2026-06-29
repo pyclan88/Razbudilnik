@@ -195,6 +195,8 @@ hellgate
 
 12. If a minimal Git config change is required only to restore read access, explain it briefly and do only that minimal change after explicit permission.
 
+13. Do not touch, edit, stage, commit, move, delete, generate, or otherwise modify anything unless I directly ask for that specific action. The keyword `hellgate` allows edits, but it does not imply permission to change unrelated files or perform adjacent cleanup.
+
 ---
 
 ## 7. Code output rules
