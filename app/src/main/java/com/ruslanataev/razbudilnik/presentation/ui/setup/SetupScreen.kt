@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Switch
@@ -30,51 +31,30 @@ fun SetupScreen(
     onTimeSelected: (hour: Int, minute: Int) -> Unit,
     onEnabledChange: (Boolean) -> Unit,
     onOpenExactAlarmSettingsClick: () -> Unit,
+    onExactAlarmAccessDialogDismissed: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var isTimePickerVisible by remember { mutableStateOf(false) }
 
-    val timePickerState = rememberTimePickerState(
-        is24Hour = true,
-    )
-
-    LaunchedEffect(isTimePickerVisible, state.hour, state.minute) {
-        if (isTimePickerVisible) {
-            timePickerState.hour = state.hour
-            timePickerState.minute = state.minute
-        }
-    }
-
     if (isTimePickerVisible) {
-        TimePickerDialog(
-            title = {
-                Text("Select wake-up time")
-            },
-            onDismissRequest = {
+        WakeUpTimePickerDialog(
+            initialHour = state.hour,
+            initialMinute = state.minute,
+            onConfirm = { hour, minute ->
+                onTimeSelected(hour, minute)
                 isTimePickerVisible = false
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onTimeSelected(timePickerState.hour, timePickerState.minute)
-                        isTimePickerVisible = false
-                    }
-                ) {
-                    Text("OK")
-                }
+            onDismiss = {
+                isTimePickerVisible = false
             },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        isTimePickerVisible = false
-                    }
-                ) {
-                    Text("Cancel")
-                }
-            }
-        ) {
-            TimeInput(state = timePickerState)
-        }
+        )
+    }
+
+    if (state.isExactAlarmAccessDialogVisible) {
+        ExactAlarmAccessDialog(
+            onOpenSettingsClick = onOpenExactAlarmSettingsClick,
+            onDismiss = onExactAlarmAccessDialogDismissed,
+        )
     }
 
     Column(
@@ -95,19 +75,80 @@ fun SetupScreen(
             checked = state.enabled,
             onCheckedChange = onEnabledChange,
         )
-
-        state.statusMessage?.let { statusMessage ->
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(statusMessage)
-
-                TextButton(
-                    onClick = onOpenExactAlarmSettingsClick,
-                ) {
-                    Text("Grant exact alarm access")
-                }
-            }
-        }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WakeUpTimePickerDialog(
+    initialHour: Int,
+    initialMinute: Int,
+    onConfirm: (hour: Int, minute: Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val timePickerState = rememberTimePickerState(
+        initialHour = initialHour,
+        initialMinute = initialMinute,
+        is24Hour = true,
+    )
+
+    TimePickerDialog(
+        title = {
+            Text("Select wake-up time")
+        },
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onConfirm(timePickerState.hour, timePickerState.minute)
+                },
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+            ) {
+                Text("Cancel")
+            }
+        },
+    ) {
+        TimeInput(state = timePickerState)
+    }
+}
+
+@Composable
+private fun ExactAlarmAccessDialog(
+    onOpenSettingsClick: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Allow exact alarms?")
+        },
+        text = {
+            Text(
+                "The Razbudilnik needs exact-alarm access so your alarm can ring at the selected time."
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onOpenSettingsClick,
+            ) {
+                Text("Open settings")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+            ) {
+                Text("Not now")
+            }
+        },
+    )
+
 }
 
 @Preview(showBackground = true)
@@ -117,6 +158,7 @@ private fun SetupScreenPreview() {
         state = SetupUiState.initial(),
         onTimeSelected = { _, _ -> },
         onEnabledChange = {},
-        onOpenExactAlarmSettingsClick = {}
+        onOpenExactAlarmSettingsClick = {},
+        onExactAlarmAccessDialogDismissed = {}
     )
 }

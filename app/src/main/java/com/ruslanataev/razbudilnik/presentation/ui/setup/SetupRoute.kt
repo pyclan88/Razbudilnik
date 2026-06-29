@@ -32,7 +32,7 @@ fun SetupRoute(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.onExactAlarmAccessChecked(
-                    canScheduleExactAlarm(context),
+                    hasExactAlarmAccess(context),
                 )
             }
         }
@@ -47,10 +47,16 @@ fun SetupRoute(
     SetupScreen(
         state = state,
         onTimeSelected = viewModel::onTimeSelected,
-        onEnabledChange = viewModel::onEnabledChange,
+        onEnabledChange = { enabled ->
+            viewModel.onEnabledChange(
+                enabled = enabled,
+                hasExactAlarmAccess = !enabled || hasExactAlarmAccess(context),
+            )
+        },
         onOpenExactAlarmSettingsClick = {
             openExactAlarmSettings(context)
         },
+        onExactAlarmAccessDialogDismissed = viewModel::onExactAlarmAccessDialogDismissed,
         modifier = modifier,
     )
 }
@@ -67,7 +73,7 @@ private fun openExactAlarmSettings(context: Context) {
     context.startActivity(intent)
 }
 
-private fun canScheduleExactAlarm(context: Context): Boolean {
+private fun hasExactAlarmAccess(context: Context): Boolean {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
         return true
     }

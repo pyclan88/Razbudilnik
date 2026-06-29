@@ -27,6 +27,8 @@ class SetupViewModel @Inject constructor(
     private val cancelAlarmUseCase: CancelAlarmUseCase,
 ) : ViewModel() {
 
+    private var pendingEnableAfterPermissionGrant: Boolean = false
+
     private val _state: MutableStateFlow<SetupUiState> = MutableStateFlow(SetupUiState.initial())
     val state: StateFlow<SetupUiState> = _state.asStateFlow()
 
@@ -36,29 +38,50 @@ class SetupViewModel @Inject constructor(
                 val alarmSettingsVO = AlarmSettingsToAlarmSettingsVOMapper.map(alarmSettings)
 
                 _state.update { currentState ->
-                    currentState.copyFrom(
-                        alarmSettingsVO = alarmSettingsVO,
-                        statusMessage = null,
+                    currentState.copy(
+                        hour = alarmSettingsVO.hour,
+                        minute = alarmSettingsVO.minute,
+                        enabled = alarmSettingsVO.enabled
                     )
                 }
             }
         }
     }
 
-    fun onEnabledChange(enabled: Boolean) {
+    fun onEnabledChange(
+        enabled: Boolean,
+        hasExactAlarmAccess: Boolean,
+        ) {
         val currentState = _state.value
 
         viewModelScope.launch {
             if (enabled) {
-                val wasScheduled = scheduleAlarmUseCase(currentState.hour, currentState.minute)
-                if (!wasScheduled) {
+                if (!hasExactAlarmAccess) {
+                    pendingEnableAfterPermissionGrant = true
+
                     saveAlarmEnabledUseCase(false)
 
                     _state.update { latestState ->
                         latestState.copy(
                             enabled = false,
-                            statusMessage = "Exact alarms are unavailable on this device right now.",
-                            shouldEnableAfterPermissionGrant = true,
+                            isExactAlarmAccessDialogVisible = true,
+                        )
+                    }
+
+                    return@launch
+                }
+
+                val wasScheduled = scheduleAlarmUseCase(currentState.hour, currentState.minute)
+
+                if (!wasScheduled) {
+                    pendingEnableAfterPermissionGrant = true
+
+                    saveAlarmEnabledUseCase(false)
+
+                    _state.update { latestState ->
+                        latestState.copy(
+                            enabled = false,
+                            isExactAlarmAccessDialogVisible = true,
                         )
                     }
                     return@launch
@@ -67,49 +90,57 @@ class SetupViewModel @Inject constructor(
                 cancelAlarmUseCase()
             }
 
+            pendingEnableAfterPermissionGrant = false
+
             saveAlarmEnabledUseCase(enabled)
 
             _state.update { latestState ->
                 latestState.copy(
                     enabled = enabled,
-                    statusMessage = null,
-                    shouldEnableAfterPermissionGrant = false,
+                    isExactAlarmAccessDialogVisible = false
                 )
             }
         }
     }
 
     fun onExactAlarmAccessChecked(canScheduleExactAlarm: Boolean) {
-        if (!canScheduleExactAlarm) {
-            return
-        }
-
         val currentState = _state.value
 
         viewModelScope.launch {
-            if (currentState.shouldEnableAfterPermissionGrant) {
-                val wasScheduled = scheduleAlarmUseCase(currentState.hour, currentState.minute)
-                if (wasScheduled) {
-                    saveAlarmEnabledUseCase(true)
+            if (!canScheduleExactAlarm) {
+                    pendingEnableAfterPermissionGrant = false
+
+                    cancelAlarmUseCase()
+                    saveAlarmEnabledUseCase(false)
 
                     _state.update { latestState ->
                         latestState.copy(
-                            enabled = true,
-                            statusMessage = null,
-                            shouldEnableAfterPermissionGrant = false,
+                            enabled = false,
+                            isExactAlarmAccessDialogVisible = false,
                         )
-                    }
-                    return@launch
+                }
+
+                return@launch
+            }
+
+            if (!pendingEnableAfterPermissionGrant) {
+                return@launch
+            }
+
+            val wasScheduled = scheduleAlarmUseCase(currentState.hour, currentState.minute)
+
+            if (wasScheduled) {
+                pendingEnableAfterPermissionGrant = false
+
+                saveAlarmEnabledUseCase(true)
+
+                _state.update { latestState ->
+                    latestState.copy(
+                        enabled = true,
+                        isExactAlarmAccessDialogVisible = false,
+                    )
                 }
             }
-
-            _state.update { latestState ->
-                latestState.copy(
-                    statusMessage = null,
-                    shouldEnableAfterPermissionGrant = false,
-                )
-            }
-
         }
     }
 
@@ -123,7 +154,6 @@ class SetupViewModel @Inject constructor(
                 currentState.copy(
                     hour = hour,
                     minute = minute,
-                    statusMessage = null,
                 )
             }
 
@@ -141,25 +171,17 @@ class SetupViewModel @Inject constructor(
                         hour = hour,
                         minute = minute,
                         enabled = false,
-                        statusMessage = "Exact alarms are unavailable on this device right now.",
-                        shouldEnableAfterPermissionGrant = true
                     )
                 }
             }
         }
     }
 
-    private fun SetupUiState.copyFrom(
-        alarmSettingsVO: AlarmSettingsVO,
-        statusMessage: String? = this.statusMessage,
-        shouldEnableAfterPermissionGrant: Boolean = this.shouldEnableAfterPermissionGrant,
-    ): SetupUiState {
-        return copy(
-            hour = alarmSettingsVO.hour,
-            minute = alarmSettingsVO.minute,
-            enabled = alarmSettingsVO.enabled,
-            statusMessage = statusMessage,
-            shouldEnableAfterPermissionGrant = shouldEnableAfterPermissionGrant,
-        )
+    fun onExactAlarmAccessDialogDismissed() {
+        pendingEnableAfterPermissionGrant = false
+
+        _state.update { state ->
+            state.copy(isExactAlarmAccessDialogVisible = false)
+        }
     }
 }

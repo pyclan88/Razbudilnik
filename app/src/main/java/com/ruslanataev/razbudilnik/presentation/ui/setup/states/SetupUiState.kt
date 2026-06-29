@@ -6,8 +6,7 @@ data class SetupUiState(
     val hour: Int,
     val minute: Int,
     val enabled: Boolean,
-    val statusMessage: String? = null,
-    val shouldEnableAfterPermissionGrant: Boolean = false,
+    val isExactAlarmAccessDialogVisible: Boolean = false,
 ) {
     val wakeUpTime: String
         get() = "%02d:%02d".format(hour, minute)
