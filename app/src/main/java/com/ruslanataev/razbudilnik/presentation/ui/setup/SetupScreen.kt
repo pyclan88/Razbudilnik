@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Switch
@@ -14,7 +13,6 @@ import androidx.compose.material3.TimeInput
 import androidx.compose.material3.TimePickerDialog
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,8 +28,6 @@ fun SetupScreen(
     state: SetupUiState,
     onTimeSelected: (hour: Int, minute: Int) -> Unit,
     onEnabledChange: (Boolean) -> Unit,
-    onOpenExactAlarmSettingsClick: () -> Unit,
-    onExactAlarmAccessDialogDismissed: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var isTimePickerVisible by remember { mutableStateOf(false) }
@@ -47,13 +43,6 @@ fun SetupScreen(
             onDismiss = {
                 isTimePickerVisible = false
             },
-        )
-    }
-
-    if (state.isExactAlarmAccessDialogVisible) {
-        ExactAlarmAccessDialog(
-            onOpenSettingsClick = onOpenExactAlarmSettingsClick,
-            onDismiss = onExactAlarmAccessDialogDismissed,
         )
     }
 
@@ -118,39 +107,6 @@ private fun WakeUpTimePickerDialog(
     }
 }
 
-@Composable
-private fun ExactAlarmAccessDialog(
-    onOpenSettingsClick: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text("Allow exact alarms?")
-        },
-        text = {
-            Text(
-                "The Razbudilnik needs exact-alarm access so your alarm can ring at the selected time."
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onOpenSettingsClick,
-            ) {
-                Text("Open settings")
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-            ) {
-                Text("Not now")
-            }
-        },
-    )
-
-}
-
 @Preview(showBackground = true)
 @Composable
 private fun SetupScreenPreview() {
@@ -158,7 +114,5 @@ private fun SetupScreenPreview() {
         state = SetupUiState.initial(),
         onTimeSelected = { _, _ -> },
         onEnabledChange = {},
-        onOpenExactAlarmSettingsClick = {},
-        onExactAlarmAccessDialogDismissed = {}
     )
 }

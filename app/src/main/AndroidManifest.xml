@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:tools="http://schemas.android.com/tools"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission
-        android:name="android.permission.SCHEDULE_EXACT_ALARM"
-        android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM"
+        android:name="android.permission.USE_EXACT_ALARM"
         tools:ignore="ExactAlarmPolicy" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Added: needed for alarm full-screen notifications. -->
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"
+    <uses-permission
+        android:name="android.permission.USE_FULL_SCREEN_INTENT"
         tools:ignore="FullScreenIntentPolicy" />
 
     <application

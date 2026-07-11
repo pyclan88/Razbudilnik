@@ -1,7 +1,6 @@
 package com.ruslanataev.razbudilnik.runtime.alarm
 
 import android.Manifest
-import android.R
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -9,7 +8,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -59,7 +57,7 @@ class AlarmNotificationHelper(
         )
 
         val notification = NotificationCompat.Builder(context, ALARM_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_lock_idle_alarm)
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle("Alarm")
             .setContentText("Wake up time: %02d:%02d".format(hour, minute))
             .setCategory(NotificationCompat.CATEGORY_ALARM)
@@ -82,10 +80,6 @@ class AlarmNotificationHelper(
     }
 
     private fun canPostNotifications(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            return true
-        }
-
         return ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.POST_NOTIFICATIONS,
