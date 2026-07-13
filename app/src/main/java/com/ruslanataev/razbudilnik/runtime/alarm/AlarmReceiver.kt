@@ -14,7 +14,13 @@ class AlarmReceiver : BroadcastReceiver() {
         val hour = intent.getIntExtra(EXTRA_HOUR, 7)
         val minute = intent.getIntExtra(EXTRA_MINUTE, 0)
 
-        AlarmNotificationHelper(context).showAlarmNotification(hour, minute)
+        context.startForegroundService(
+            AlarmRingingService.createStartIntent(
+                context = context,
+                hour = hour,
+                minute = minute,
+            ),
+        )
     }
 
     companion object {

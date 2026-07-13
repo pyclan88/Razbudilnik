@@ -6,10 +6,12 @@
         android:name="android.permission.USE_EXACT_ALARM"
         tools:ignore="ExactAlarmPolicy" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Added: needed for alarm full-screen notifications. -->
     <uses-permission
         android:name="android.permission.USE_FULL_SCREEN_INTENT"
         tools:ignore="FullScreenIntentPolicy" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
 
     <application
         android:name=".App"
@@ -40,6 +42,11 @@
             android:showWhenLocked="true"
             android:theme="@style/Theme.Razbudilnik"
             android:turnScreenOn="true" />
+
+        <service
+            android:name=".runtime.alarm.AlarmRingingService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
 
         <receiver
             android:name=".runtime.alarm.AlarmReceiver"
