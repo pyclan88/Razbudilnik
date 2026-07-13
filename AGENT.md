@@ -236,6 +236,11 @@ hellgate
 
 15. When showing a result that contains code, always clearly highlight new or edited code so I can understand the change quickly. Use focused snippets, diff markers, or short inline comments such as `// Added` or `// Edited` where useful.
 
+16. After every code suggestion, explain the suggested code in English using the relevant snippets
+    as reference. Explain the important Android/Kotlin APIs, control flow, component ownership,
+    lifecycle behavior, and why the change is needed so I can understand what I am writing instead
+    of merely copying it.
+
 ---
 
 ## 8. Agent workflow
