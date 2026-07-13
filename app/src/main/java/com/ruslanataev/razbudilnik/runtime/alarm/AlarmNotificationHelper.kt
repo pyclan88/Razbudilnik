@@ -79,6 +79,12 @@ class AlarmNotificationHelper(
         )
     }
 
+    fun cancelAlarmNotification() {
+        NotificationManagerCompat.from(context).cancel(
+            NOTIFICATION_ID_ALARM,
+        )
+    }
+
     private fun canPostNotifications(): Boolean {
         return ContextCompat.checkSelfPermission(
             context,

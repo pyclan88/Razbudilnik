@@ -7,8 +7,9 @@ import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.ruslanataev.razbudilnik.runtime.alarm.AlarmReceiver
 import com.ruslanataev.razbudilnik.presentation.ui.theme.RazbudilnikTheme
+import com.ruslanataev.razbudilnik.runtime.alarm.AlarmNotificationHelper
+import com.ruslanataev.razbudilnik.runtime.alarm.AlarmReceiver
 
 class AlarmActivity : ComponentActivity() {
 
@@ -27,10 +28,7 @@ class AlarmActivity : ComponentActivity() {
             RazbudilnikTheme {
                 AlarmScreen(
                     time = "%02d:%02d".format(hour, minute),
-                    onStopClick = {
-                        stopAlarmSound()
-                        finish()
-                    },
+                    onStopClick = ::stopAlarm,
                 )
             }
         }
@@ -74,5 +72,11 @@ class AlarmActivity : ComponentActivity() {
         return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+    }
+
+    private fun stopAlarm() {
+        stopAlarmSound()
+        AlarmNotificationHelper(this).cancelAlarmNotification()
+        finish()
     }
 }
