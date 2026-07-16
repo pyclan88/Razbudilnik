@@ -23,6 +23,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.currentStateAsState
 import com.ruslanataev.razbudilnik.presentation.ui.setup.viewmodel.SetupViewModel
+import com.ruslanataev.razbudilnik.runtime.alarm.AlarmNotificationHelper
 
 @Composable
 fun SetupRoute(
@@ -57,11 +58,39 @@ fun SetupRoute(
         }
     }
 
+    val alarmChannelSettingsLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+    ) {
+        if (hasAlarmChannelAccess(context)) {
+            when {
+                !hasBatteryOptimizationExemption(context) -> {
+                    batteryOptimizationLauncher.launch(
+                        createBatteryOptimizationRequestIntent(context)
+                    )
+                }
+
+                !hasFullScreenIntentAccess(context) -> {
+                    fullScreenIntentLauncher.launch(
+                        createFullScreenIntentSettingsIntent(context),
+                    )
+                }
+
+                else -> viewModel.onEnabledChange(true)
+            }
+        }
+    }
+
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) { granted ->
         if (granted) {
             when {
+                !hasAlarmChannelAccess(context) -> {
+                    alarmChannelSettingsLauncher.launch(
+                        createAlarmChannelSettingsIntent(context),
+                    )
+                }
+
                 !hasBatteryOptimizationExemption(context) -> {
                     batteryOptimizationLauncher.launch(
                         createBatteryOptimizationRequestIntent(context),
@@ -83,6 +112,7 @@ fun SetupRoute(
         val isAppResumed = lifecycleState.isAtLeast(Lifecycle.State.RESUMED)
 
         val isRequiredAccessMissing = !hasNotificationPermission(context) ||
+                !hasAlarmChannelAccess(context) ||
                 !hasBatteryOptimizationExemption(context) ||
                 !hasFullScreenIntentAccess(context)
 
@@ -101,6 +131,12 @@ fun SetupRoute(
                 !hasNotificationPermission(context) -> {
                     notificationPermissionLauncher.launch(
                         Manifest.permission.POST_NOTIFICATIONS,
+                    )
+                }
+
+                !hasAlarmChannelAccess(context) -> {
+                    alarmChannelSettingsLauncher.launch(
+                        createAlarmChannelSettingsIntent(context),
                     )
                 }
 
@@ -156,4 +192,20 @@ private fun createFullScreenIntentSettingsIntent(context: Context): Intent {
         Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
         "package:${context.packageName}".toUri(),
     )
+}
+
+private fun hasAlarmChannelAccess(context: Context): Boolean {
+    val notificationManager = context.getSystemService(NotificationManager::class.java)
+
+    val alarmChannel =
+        notificationManager.getNotificationChannel(AlarmNotificationHelper.ALARM_CHANNEL_ID)
+
+    return alarmChannel != null && alarmChannel.importance >= NotificationManager.IMPORTANCE_HIGH
+}
+
+private fun createAlarmChannelSettingsIntent(context: Context): Intent {
+    return Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
+        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+        putExtra(Settings.EXTRA_CHANNEL_ID, AlarmNotificationHelper.ALARM_CHANNEL_ID)
+    }
 }
