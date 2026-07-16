@@ -241,6 +241,10 @@ hellgate
     lifecycle behavior, and why the change is needed so I can understand what I am writing instead
     of merely copying it.
 
+17. When suggesting edits to an existing file, show the complete relevant part of the file with all
+    edits already integrated into their final positions. Do not split one change across disconnected
+    snippets that force me to search for insertion points or reconstruct the finished code myself.
+
 ---
 
 ## 8. Agent workflow
