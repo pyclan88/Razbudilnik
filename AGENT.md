@@ -244,6 +244,10 @@ hellgate
 17. When suggesting edits to an existing file, show the complete relevant part of the file with all
     edits already integrated into their final positions. Do not split one change across disconnected
     snippets that force me to search for insertion points or reconstruct the finished code myself.
+    Never replace the edited code with prose instructions such as "add this after X," "put this
+    before
+    Y," or "also include this inside Z." Show the final surrounding code exactly as it should look,
+    with every addition and modification visibly highlighted.
 
 ---
 
