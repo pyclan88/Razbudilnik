@@ -1,11 +1,10 @@
 package com.ruslanataev.razbudilnik.data.alarm.scheduler
 
-import android.Manifest
+import android.annotation.SuppressLint
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import androidx.annotation.RequiresPermission
 import com.ruslanataev.razbudilnik.domain.alarm.api.AlarmScheduler
 import com.ruslanataev.razbudilnik.runtime.alarm.AlarmReceiver
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,7 +19,7 @@ class AlarmSchedulerImpl @Inject constructor(
     private val alarmManager: AlarmManager =
         context.getSystemService(AlarmManager::class.java)
 
-    @RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
+    @SuppressLint("MissingPermission")
     override suspend fun schedule(hour: Int, minute: Int): Boolean {
         if (!alarmManager.canScheduleExactAlarms()) {
             return false
