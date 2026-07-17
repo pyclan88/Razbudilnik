@@ -1,12 +1,10 @@
 package com.ruslanataev.razbudilnik.presentation.ui.setup
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
@@ -15,7 +13,6 @@ import com.ruslanataev.razbudilnik.runtime.alarm.AlarmNotificationHelper
 internal fun hasRequiredAlarmAccess(context: Context): Boolean {
     return hasNotificationPermission(context) &&
             hasAlarmChannelAccess(context) &&
-            hasBatteryOptimizationExemption(context) &&
             hasFullScreenIntentAccess(context)
 }
 
@@ -40,20 +37,6 @@ internal fun createAlarmChannelSettingsIntent(context: Context): Intent {
         putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
         putExtra(Settings.EXTRA_CHANNEL_ID, AlarmNotificationHelper.ALARM_CHANNEL_ID)
     }
-}
-
-internal fun hasBatteryOptimizationExemption(context: Context): Boolean {
-    val powerManager = context.getSystemService(PowerManager::class.java)
-
-    return powerManager.isIgnoringBatteryOptimizations(context.packageName)
-}
-
-@SuppressLint("BatteryLife")
-internal fun createBatteryOptimizationRequestIntent(context: Context): Intent {
-    return Intent(
-        Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-        "package:${context.packageName}".toUri(),
-    )
 }
 
 internal fun hasFullScreenIntentAccess(context: Context): Boolean {

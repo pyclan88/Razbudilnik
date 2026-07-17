@@ -34,38 +34,16 @@ fun SetupRoute(
         }
     }
 
-    val batteryOptimizationLauncher = rememberLauncherForActivityResult(
+    val alarmChannelSettingsLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
     ) {
-        if (hasBatteryOptimizationExemption(context)) {
+        if (hasAlarmChannelAccess(context)) {
             if (hasFullScreenIntentAccess(context)) {
                 viewModel.onEnabledChange(true)
             } else {
                 fullScreenIntentLauncher.launch(
                     createFullScreenIntentSettingsIntent(context),
                 )
-            }
-        }
-    }
-
-    val alarmChannelSettingsLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult(),
-    ) {
-        if (hasAlarmChannelAccess(context)) {
-            when {
-                !hasBatteryOptimizationExemption(context) -> {
-                    batteryOptimizationLauncher.launch(
-                        createBatteryOptimizationRequestIntent(context)
-                    )
-                }
-
-                !hasFullScreenIntentAccess(context) -> {
-                    fullScreenIntentLauncher.launch(
-                        createFullScreenIntentSettingsIntent(context),
-                    )
-                }
-
-                else -> viewModel.onEnabledChange(true)
             }
         }
     }
@@ -78,12 +56,6 @@ fun SetupRoute(
                 !hasAlarmChannelAccess(context) -> {
                     alarmChannelSettingsLauncher.launch(
                         createAlarmChannelSettingsIntent(context),
-                    )
-                }
-
-                !hasBatteryOptimizationExemption(context) -> {
-                    batteryOptimizationLauncher.launch(
-                        createBatteryOptimizationRequestIntent(context),
                     )
                 }
 
@@ -126,12 +98,6 @@ fun SetupRoute(
                 !hasAlarmChannelAccess(context) -> {
                     alarmChannelSettingsLauncher.launch(
                         createAlarmChannelSettingsIntent(context),
-                    )
-                }
-
-                !hasBatteryOptimizationExemption(context) -> {
-                    batteryOptimizationLauncher.launch(
-                        createBatteryOptimizationRequestIntent(context),
                     )
                 }
 
