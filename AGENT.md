@@ -249,6 +249,13 @@ hellgate
     Y," or "also include this inside Z." Show the final surrounding code exactly as it should look,
     with every addition and modification visibly highlighted.
 
+18. In every suggested code block that changes project code, add short comments directly beside or
+    immediately above the changed lines to explain what is being added or edited and why. Use labels
+    such as `// Added:` and `// Edited:` so I can identify every proposed change without comparing
+    the
+    snippet against the existing file. Keep these comments in suggestions shown in chat; they do not
+    have to remain in the final project code unless they explain behavior that future readers need.
+
 ---
 
 ## 8. Agent workflow
