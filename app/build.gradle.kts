@@ -14,7 +14,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.ruslanataev.razbudilnik"
+        applicationId = "com.ruslanataev.razbudilnik.alarm"
         minSdk = 34
         targetSdk = 36
         versionCode = 1
