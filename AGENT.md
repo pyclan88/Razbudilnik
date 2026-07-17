@@ -155,6 +155,8 @@ Corrected: <corrected version>
 
 19. Activities and other UI entry points belong to the presentation layer. Non-UI Android framework entry points such as BroadcastReceiver and Service belong to an outer runtime/framework package, not to data, domain, or pure presentation state packages.
 
+20. Always check the project's `minSdk`, `targetSdk`, and relevant Android API levels before suggesting or using platform APIs. If an API is newer than `minSdk`, include the required version guard or use a backward-compatible API.
+
 ---
 
 ## 6. Code modification safety rule
@@ -195,6 +197,8 @@ hellgate
 
 12. If a minimal Git config change is required only to restore read access, explain it briefly and do only that minimal change after explicit permission.
 
+13. Do not touch, edit, stage, commit, move, delete, generate, or otherwise modify anything unless I directly ask for that specific action. The keyword `hellgate` allows edits, but it does not imply permission to change unrelated files or perform adjacent cleanup.
+
 ---
 
 ## 7. Code output rules
@@ -231,6 +235,26 @@ hellgate
 14. Do not mention new architectural files abstractly. If use cases, interactors, repositories, models, modules, or factories are needed, list them explicitly with their package/path and show their code when relevant.
 
 15. When showing a result that contains code, always clearly highlight new or edited code so I can understand the change quickly. Use focused snippets, diff markers, or short inline comments such as `// Added` or `// Edited` where useful.
+
+16. After every code suggestion, explain the suggested code in English using the relevant snippets
+    as reference. Explain the important Android/Kotlin APIs, control flow, component ownership,
+    lifecycle behavior, and why the change is needed so I can understand what I am writing instead
+    of merely copying it.
+
+17. When suggesting edits to an existing file, show the complete relevant part of the file with all
+    edits already integrated into their final positions. Do not split one change across disconnected
+    snippets that force me to search for insertion points or reconstruct the finished code myself.
+    Never replace the edited code with prose instructions such as "add this after X," "put this
+    before
+    Y," or "also include this inside Z." Show the final surrounding code exactly as it should look,
+    with every addition and modification visibly highlighted.
+
+18. In every suggested code block that changes project code, add short comments directly beside or
+    immediately above the changed lines to explain what is being added or edited and why. Use labels
+    such as `// Added:` and `// Edited:` so I can identify every proposed change without comparing
+    the
+    snippet against the existing file. Keep these comments in suggestions shown in chat; they do not
+    have to remain in the final project code unless they explain behavior that future readers need.
 
 ---
 

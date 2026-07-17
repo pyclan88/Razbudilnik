@@ -1,198 +1,218 @@
 # Codex Handoff: Razbudilnik
 
-## Current State
+## Start Here
 
-Project path on this PC: `C:\Users\Pyclan\AndroidStudioProjects\Razbudilnik`
+Read `AGENT.md` before doing anything.
 
-Current branch: `3-alarm-setup-scheduling`
+Important rules:
 
-Latest branch commits:
-- `d54a304 Align setup models and mappers across layers`
-- `330e803 Handle setup alarm scheduling and exact alarm access flow`
-- `59f412b Fix first-run setup defaults`
-- `d11115a Handle setup scheduling failure and exact alarm access`
-- base: `b971195 Merge pull request #2 from pyclan88/alarm-runtime-mvp`
+- Respond only in English and correct the user's English.
+- Do not modify files unless the user says `hellgate`.
+- Even after `hellgate`, modify only what the user directly requested.
+- Git is read-only unless the user explicitly requests a particular Git mutation.
+- Show concrete code suggestions and clearly highlight edited code.
+- Keep PR work split into small, testable commits.
 
-Working tree status at handoff:
-- tracked files are clean
-- untracked local folders exist:
-  - `.gradle-user-home/`
-  - `.vscode/`
+## Repository State
 
-PR is intended to be opened as draft, not merged yet.
+Project on the original PC:
 
-## Important Project Rules
+- `C:\Users\Pyclan\AndroidStudioProjects\Razbudilnik`
 
-Read `AGENT.md` first.
+Current branch:
 
-Critical rules:
-- Always answer in English.
-- Always correct the user's English.
-- Do not edit project files unless user says `hellgate`.
-- Git is read-only by default unless the user explicitly asks for a specific mutating Git action.
-- Always show concrete code suggestions in chat.
-- When suggesting code, include useful `// comments`.
-- PRs should be planned as logical commit-steps.
-- At the end of each commit-step: review, tell what to test, provide commit message/comments, then state the next step.
+- `4-alarm-notification`
+
+Latest commit:
+
+- `c79474f Use automatic exact alarm permission flow`
+
+Current uncommitted change:
+
+- `app/src/main/java/com/ruslanataev/razbudilnik/presentation/ui/setup/SetupRoute.kt`
+- Adds the Android runtime `POST_NOTIFICATIONS` request when the user tries to enable the alarm.
+
+To continue on another PC:
+
+```powershell
+git fetch origin
+git switch 4-alarm-notification
+git pull
+```
+
+The uncommitted `SetupRoute.kt` change must be committed and pushed on the original PC before it can
+be pulled elsewhere.
 
 ## Product Goal
 
-The app is an Android alarm clock app with a future reader feature.
+Razbudilnik is an Android alarm clock with a future reader challenge.
 
-Current PR goal:
-Wire the setup screen to control one exact alarm and handle exact-alarm access cleanly.
+Current MVP direction:
 
-This PR includes:
-- setup time selection
-- switch-based scheduling/canceling
-- exact-alarm access error state
-- opening Android Alarms & Reminders settings
-- rechecking access on resume
-- setup model/mapping cleanup
+- one alarm
+- reliable alarm delivery
+- future reading challenge lasting approximately five minutes
+- future movement requirement intended to keep the user awake
 
-This PR does not include:
-- reliable alarm delivery via notification/full-screen intent
-- reboot restore
-- snooze
-- multiple alarms
-- reader flow
-- final alarm-platform hardening
+Do not add reader, movement, multiple-alarm, snooze, or reboot behavior in the current commit.
 
-## Current Architecture
+## Android Configuration
 
-Layers:
-- `domain`
-- `data`
-- `presentation`
-- `runtime` for non-UI Android entry points like `BroadcastReceiver`
+- `minSdk = 34` (Android 14)
+- `targetSdk = 36`
+- `compileSdk = 36.1`
 
-Important rule:
-- Activity/UI belongs to presentation.
-- BroadcastReceiver/Service belongs to runtime/framework.
-- data and presentation must not depend on each other.
-- ViewModels depend on domain use cases/interactors.
+Because `minSdk` is 34, current Android 14 permission APIs do not need older-version guards.
 
-Model naming convention:
-- data model: `AlarmSettingsDto`
-- domain model: `AlarmSettings`
-- presentation model: `AlarmSettingsVO`
-- screen state: `SetupUiState`
+## Current PR Goal
 
-Mapping direction:
-- data -> domain
-- domain -> presentation
-- ViewModel fills `SetupUiState` from presentation model; no separate VO-to-UiState mapper for now.
+Deliver fired alarms through a high-priority notification and full-screen intent so alarms remain
+visible when the app is backgrounded or the screen is locked.
 
-Current files:
-- `data/setup/models/AlarmSettingsDto.kt`
-- `domain/setup/models/AlarmSettings.kt`
-- `presentation/ui/setup/models/AlarmSettingsVO.kt`
-- `data/setup/mappers/AlarmSettingsDtoToAlarmSettingsMapper.kt`
-- `presentation/ui/setup/mappers/AlarmSettingsToAlarmSettingsVOMapper.kt`
-- `presentation/ui/setup/states/SetupUiState.kt`
-- `presentation/ui/setup/viewmodel/SetupViewModel.kt`
+Implemented pieces:
 
-## Current Behavior
+- alarm notification channel
+- high-priority alarm notification
+- full-screen/content intent opening `AlarmActivity`
+- `AlarmReceiver` posts the notification
+- exact scheduling uses `AlarmManager.setAlarmClock()`
+- manifest declares `USE_EXACT_ALARM`
+- obsolete `SCHEDULE_EXACT_ALARM` settings flow has been removed
+- project now supports Android 14+
 
-Setup screen can:
-- show current setup state
-- open time picker
-- save selected time
-- switch alarm on/off
-- schedule alarm when enabled
-- cancel alarm when disabled
-- reschedule alarm when time changes while enabled
-- show error when exact alarms are unavailable
-- open Android exact-alarm settings
-- recheck exact-alarm access after returning from settings
+Still being completed:
 
-Exact alarm flow:
-- Android 12 (S, API 31)+ uses special access: Alarms & Reminders.
-- On Android 14 phone, enabling without access shows:
-  `Exact alarms are unavailable on this device right now.`
-- Button opens system settings.
-- On resume, app checks `AlarmManager.canScheduleExactAlarms()`.
+- request notification permission before enabling the alarm
+- test notification and full-screen behavior in all relevant device states
 
-## Known Issue To Fix Next
+## Permission Model
 
-`shouldEnableAfterPermissionGrant` currently lives inside `SetupUiState`.
+Exact alarm permission:
 
-The user thinks this is a hack, and I agree.
+- Manifest declares `android.permission.USE_EXACT_ALARM`.
+- It is automatically granted for qualifying alarm-clock use cases.
+- Razbudilnik therefore does not appear in the user-controlled **Alarms & Reminders** list.
+- `AlarmSchedulerImpl` still checks `alarmManager.canScheduleExactAlarms()` defensively.
+- The user intentionally kept `@RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)`
+  despite the manifest using `USE_EXACT_ALARM`; do not change it without discussing it first.
 
-Why:
-- it is not UI-rendered state
-- it is internal ViewModel control state
-- UI does not need to know about deferred retry intent
+Notification permission:
 
-Next commit-step:
-`Keep deferred enable intent inside setup view model`
+- Manifest declares `android.permission.POST_NOTIFICATIONS`.
+- Android 13+ disables notifications by default for fresh installations.
+- It cannot be granted automatically to a normal third-party app.
+- It should be requested contextually when the user tries to enable the alarm.
+- If granted, continue enabling and scheduling the alarm.
+- If denied, leave the switch disabled.
 
-Change:
-- remove `shouldEnableAfterPermissionGrant` from `SetupUiState`
-- add private field in `SetupViewModel`:
-  `private var pendingEnableAfterPermissionGrant: Boolean = false`
-- preserve current behavior:
-  - user tries to enable alarm without exact-alarm access
-  - app shows error and opens settings
-  - after access is granted and app resumes, ViewModel retries scheduling
-  - if scheduling succeeds, switch becomes enabled
+Full-screen intent:
+
+- Manifest declares `android.permission.USE_FULL_SCREEN_INTENT`.
+- Device/OEM policy may still control whether a full-screen activity is shown.
+
+These permissions are independent. `USE_EXACT_ALARM` does not grant `POST_NOTIFICATIONS`.
+
+## Uncommitted Notification Permission Change
+
+`SetupRoute.kt` now:
+
+- gets `LocalContext.current`
+- registers `rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission())`
+- checks `POST_NOTIFICATIONS` before enabling
+- launches Android's system permission dialog when permission is missing
+- calls `viewModel.onEnabledChange(true)` after the user grants permission
+- does nothing after denial, leaving the switch off
+
+No ViewModel pending flag is needed. Unlike the old exact-alarm settings flow, the Activity Result
+API returns the permission result directly through its callback.
+
+Before committing:
+
+- add the missing newline at the end of `SetupRoute.kt`
+- review `git diff --check`
+- test the permission flow on the Android 14 phone
 
 Suggested commit message:
-`Keep deferred enable intent inside setup view model`
+- `Request notification permission before enabling alarm`
 
-Suggested body:
-- remove permission retry flag from setup ui state
-- keep pending enable intent as internal view model state
-- preserve exact alarm access recovery behavior
+Suggested commit body:
 
-## PR Draft Text
+```text
+Request POST_NOTIFICATIONS when the user enables the alarm.
+Continue scheduling after permission is granted.
+Keep the alarm disabled when permission is denied.
+```
 
-Title:
-`Wire setup flow to alarm scheduling`
+## Confirmed Device Diagnosis
 
-Description:
-- wire setup state to schedule, cancel, and reschedule alarms
-- show setup error when exact alarms are unavailable
-- add exact-alarm access action from setup
-- recheck exact-alarm access after returning from settings
-- default fresh setup to current time with alarm disabled
-- add setup DTO/domain/VO models and explicit mappers
+Physical test device:
 
-Known follow-up before merge:
-- improve `shouldEnableAfterPermissionGrant` by moving it out of `SetupUiState`
+- Tecno Pova Neo 3
+- Android 14
+- ADB serial used on the original PC: `1006925392001182`
 
-## Device Testing
+ADB confirmed:
 
-Current manual test device:
-- Android 14 phone
+- `USE_EXACT_ALARM: granted=true`
+- `USE_FULL_SCREEN_INTENT: granted=true`
+- `POST_NOTIFICATIONS: granted=false`
+- Android scheduled the `RTC_WAKEUP` alarm successfully
+- `AlarmReceiver` was triggered
 
-Tested / expected flow:
-- fresh install opens with current time and switch off
-- enabling without exact-alarm access shows error
-- Grant exact alarm access opens Alarms & Reminders settings
-- returning after grant clears error and should recover intended enable flow
-- changing time while enabled should reschedule
-- disabling should cancel scheduled alarm
+The previous silent alarm was caused by `AlarmNotificationHelper` returning when notification
+permission was denied. Exact alarm scheduling was working.
 
-Later cross-version verification needed:
-- Android 12 (S, API 31)
-- Android 13 (Tiramisu, API 33)
-- Android 14 (Upside Down Cake, API 34)
-- modern target SDK background alarm behavior in later PR
+## Required Tests For Current Commit
 
-## Important Future PR
+Fresh permission flow:
 
-Do not solve this in the current PR unless explicitly asked.
+1. Revoke notification permission or reinstall the app.
+2. Set the alarm two minutes ahead.
+3. Enable the switch.
+4. Confirm Android shows the notification permission dialog.
+5. Grant permission.
+6. Confirm the switch becomes enabled and the alarm is scheduled.
 
-Next future PR:
-Reliable fired-alarm delivery.
+Denial flow:
 
-Problem:
-`AlarmReceiver` currently starts `AlarmActivity` directly from a `BroadcastReceiver`. This is risky on modern Android because of background activity launch restrictions.
+1. Revoke notification permission.
+2. Try to enable the alarm.
+3. Deny permission.
+4. Confirm the switch remains disabled.
 
-Likely future direction:
-- notification channel
-- high-priority alarm notification
-- full-screen intent
-- notification permission handling on Android 13+
-- keep ringtone/ringing screen behavior separate and test carefully
+Alarm delivery smoke test:
+
+1. Grant notification permission.
+2. Schedule the alarm two minutes ahead.
+3. Press Home and lock the phone.
+4. Confirm the screen turns on, `AlarmActivity` appears, sound loops, and Stop ends the sound.
+5. Repeat with the phone unlocked.
+6. Repeat after swiping the app from Recents.
+
+Do not use Android **Force stop** as a normal alarm test. Force-stopped apps are intentionally
+blocked until launched again.
+
+## Known Gaps
+
+- If notification permission is revoked while an alarm is already enabled, app state is not yet
+  reconciled on resume.
+- Permanent notification denial has no explanatory dialog or app-settings fallback yet.
+- Alarm sound currently starts inside `AlarmActivity`. If Android shows only a heads-up notification
+  and does not launch the full-screen activity, looping sound may not start.
+- Alarm rescheduling after device reboot is not implemented.
+- The current alarm is one-shot; daily rescheduling is not implemented yet.
+- The notification uses `android.R.drawable.ic_lock_idle_alarm`; replace it later with an app-owned
+  monochrome notification icon.
+- Gradle compilation was not completed in Codex because downloading the Java 21 toolchain failed.
+  Build from Android Studio or retry when the toolchain/network is available.
+
+## Architecture Boundaries
+
+- `presentation`: Activities, Compose screens, routes, ViewModels
+- `domain`: use cases and framework-free abstractions
+- `data`: scheduler and repository implementations
+- `runtime`: Android entry points such as `BroadcastReceiver` and future services
+- `di`: dependency wiring
+
+Keep Android permission APIs in presentation/runtime code. Do not move `Context`, `Manifest`, or
+Activity Result APIs into the ViewModel or domain layer.

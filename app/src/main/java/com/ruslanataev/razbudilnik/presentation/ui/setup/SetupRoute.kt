@@ -1,22 +1,18 @@
 package com.ruslanataev.razbudilnik.presentation.ui.setup
 
-import android.app.AlarmManager
-import android.content.Context
-import android.content.Intent
-import android.os.Build
-import android.provider.Settings
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.ContextCompat
-import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.currentStateAsState
 import com.ruslanataev.razbudilnik.presentation.ui.setup.viewmodel.SetupViewModel
 
 @Composable
@@ -26,21 +22,63 @@ fun SetupRoute(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val state by viewModel.state.collectAsStateWithLifecycle()
 
-    DisposableEffect(lifecycleOwner, context) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.onExactAlarmAccessChecked(
-                    hasExactAlarmAccess(context),
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val lifecycleState by lifecycleOwner.lifecycle.currentStateAsState()
+
+    val fullScreenIntentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+    ) {
+        if (hasFullScreenIntentAccess(context)) {
+            viewModel.onEnabledChange(true)
+        }
+    }
+
+    val alarmChannelSettingsLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+    ) {
+        if (hasAlarmChannelAccess(context)) {
+            if (hasFullScreenIntentAccess(context)) {
+                viewModel.onEnabledChange(true)
+            } else {
+                fullScreenIntentLauncher.launch(
+                    createFullScreenIntentSettingsIntent(context),
                 )
             }
         }
+    }
 
-        lifecycleOwner.lifecycle.addObserver(observer)
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            when {
+                !hasAlarmChannelAccess(context) -> {
+                    alarmChannelSettingsLauncher.launch(
+                        createAlarmChannelSettingsIntent(context),
+                    )
+                }
 
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
+                !hasFullScreenIntentAccess(context) -> {
+                    fullScreenIntentLauncher.launch(
+                        createFullScreenIntentSettingsIntent(context),
+                    )
+                }
+
+                else -> viewModel.onEnabledChange(true)
+            }
+        }
+    }
+
+    LaunchedEffect(state.enabled, lifecycleState) {
+        val isAppResumed = lifecycleState.isAtLeast(Lifecycle.State.RESUMED)
+
+        if (
+            state.enabled &&
+            isAppResumed &&
+            !hasRequiredAlarmAccess(context)
+        ) {
+            viewModel.onEnabledChange(false)
         }
     }
 
@@ -48,38 +86,30 @@ fun SetupRoute(
         state = state,
         onTimeSelected = viewModel::onTimeSelected,
         onEnabledChange = { enabled ->
-            viewModel.onEnabledChange(
-                enabled = enabled,
-                hasExactAlarmAccess = !enabled || hasExactAlarmAccess(context),
-            )
+            when {
+                !enabled -> viewModel.onEnabledChange(false)
+
+                !hasNotificationPermission(context) -> {
+                    notificationPermissionLauncher.launch(
+                        Manifest.permission.POST_NOTIFICATIONS,
+                    )
+                }
+
+                !hasAlarmChannelAccess(context) -> {
+                    alarmChannelSettingsLauncher.launch(
+                        createAlarmChannelSettingsIntent(context),
+                    )
+                }
+
+                !hasFullScreenIntentAccess(context) -> {
+                    fullScreenIntentLauncher.launch(
+                        createFullScreenIntentSettingsIntent(context),
+                    )
+                }
+
+                else -> viewModel.onEnabledChange(true)
+            }
         },
-        onOpenExactAlarmSettingsClick = {
-            openExactAlarmSettings(context)
-        },
-        onExactAlarmAccessDialogDismissed = viewModel::onExactAlarmAccessDialogDismissed,
         modifier = modifier,
     )
-}
-
-private fun openExactAlarmSettings(context: Context) {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-        return
-    }
-
-    val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
-        data = "package:${context.packageName}".toUri()
-    }
-
-    context.startActivity(intent)
-}
-
-private fun hasExactAlarmAccess(context: Context): Boolean {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-        return true
-    }
-
-    val alarmManager = ContextCompat.getSystemService(context, AlarmManager::class.java)
-        ?: return false
-
-    return alarmManager.canScheduleExactAlarms()
 }
