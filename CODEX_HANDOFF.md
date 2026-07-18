@@ -11,7 +11,10 @@ Important rules:
 - Even after `hellgate`, modify only what the user directly requested.
 - Git is read-only unless the user explicitly requests a particular Git mutation.
 - Show concrete code suggestions and clearly highlight edited code.
+- Explain suggested code clearly enough that the user understands what they are writing.
 - Keep PR work split into small, testable commits.
+- PR titles must include the branch's ordinal number. Example:
+  `6. Reschedule alarm after it rings`.
 
 ## Repository State
 
@@ -21,24 +24,24 @@ Project on the original PC:
 
 Current branch:
 
-- `5-alarm-reboot-rescheduling`
+- `6-daily-alarm-rescheduling`
 
 Latest commits:
 
-- `851b636 test: cover enabled alarm rescheduling`
-- `5314b40 feat: restore enabled alarm after reboot`
-- `47e7857 feat: add enabled alarm rescheduling use case`
+- `d5ab67b test: cover next alarm trigger calculation`
+- `e728e70 refactor: extract next alarm trigger calculation`
+- `b93aae4 5. Restore enabled alarm after reboot (#5)`
 - `e1d5698 Add reliable background and lock-screen alarm delivery (#4)`
 
-Current working tree:
+Current working tree before this handoff update:
 
-- Clean before this handoff update.
+- Clean.
 
 To continue on another PC:
 
 ```powershell
 git fetch origin
-git switch 5-alarm-reboot-rescheduling
+git switch 6-daily-alarm-rescheduling
 git pull
 ```
 
@@ -51,10 +54,11 @@ Current MVP direction:
 - one alarm
 - reliable alarm delivery
 - alarm rescheduling after reboot
+- daily rescheduling after the alarm fires
 - future reading challenge lasting approximately five minutes
 - future movement requirement intended to keep the user awake
 
-Do not add reader, movement, multiple-alarm, snooze, or daily repeat behavior in this branch.
+Do not add reader, movement, multiple-alarm, snooze, or Direct Boot behavior in this branch.
 
 ## Android Configuration
 
@@ -66,40 +70,65 @@ Because `minSdk` is 34, current Android 14 permission APIs do not need older-ver
 
 ## Current PR Goal
 
-Restore the enabled alarm after device reboot.
+Make the one enabled alarm behave as a daily alarm.
 
-The app supports normal post-unlock reboot recovery:
+The app now supports this flow:
 
 1. User enables the alarm.
-2. Device reboots.
-3. Android sends `BOOT_COMPLETED` after the first unlock.
-4. `AlarmBootReceiver` runs.
-5. `RescheduleEnabledAlarmUseCase` reads saved alarm settings.
-6. If the alarm is enabled, it schedules the saved time again.
-
-This branch does not implement Direct Boot / before-unlock alarm recovery.
+2. Android schedules the next occurrence.
+3. Alarm fires.
+4. `AlarmReceiver` starts `AlarmRingingService` immediately.
+5. `AlarmReceiver` calls `RescheduleEnabledAlarmUseCase`.
+6. If the saved alarm is still enabled, Android schedules the next occurrence, usually tomorrow at
+   the same time.
 
 ## Implemented Pieces
 
-- `RescheduleEnabledAlarmUseCase`
-- `AlarmBootReceiver`
-- `RECEIVE_BOOT_COMPLETED` permission
-- Manifest receiver registration for `BOOT_COMPLETED`
-- Unit tests for enabled alarm rescheduling
+- Extracted `CalculateNextAlarmTriggerAtMillisUseCase`.
+- Added Hilt `TimeModule` to provide `java.time.Clock`.
+- Updated `AlarmSchedulerImpl` to delegate trigger-time calculation to the use case.
+- Added unit tests for next trigger-time calculation.
+- Updated `AlarmReceiver` to reschedule the enabled alarm after it fires.
+- `AlarmReceiver` uses `goAsync()` so suspend rescheduling can finish safely.
+- `AlarmReceiver` starts ringing before rescheduling, so alarm sound is not delayed by DataStore
+  reads or scheduling work.
 
 ## Tests Already Passed
 
 Gradle:
 
 ```powershell
-.\gradlew.bat testDebugUnitTest assembleDebugAndroidTest
+.\gradlew.bat testDebugUnitTest
+.\gradlew.bat testDebugUnitTest assembleDebug
 ```
+
+Unit tests confirmed:
+
+- future alarm time schedules today
+- past alarm time schedules tomorrow
+- alarm time equal to current time schedules tomorrow
 
 Manual Tecno device smoke test:
 
-- Enabled alarm survived reboot.
-- Alarm was rescheduled after boot/unlock.
-- Alarm fired successfully after reboot.
+- Alarm set for `17:53` fired and was stopped.
+- After stopping it, ADB confirmed the next exact alarm was scheduled for
+  `2026-07-19 17:53:00.000`.
+
+Useful ADB check:
+
+```powershell
+adb shell dumpsys alarm | Select-String -Pattern "com.ruslanataev.razbudilnik.alarm" -Context 5,10
+```
+
+Expected proof in output:
+
+```text
+packageName =com.ruslanataev.razbudilnik.alarm
+tag=*walarm*:com.ruslanataev.razbudilnik.action.TRIGGER_ALARM
+type=RTC_WAKEUP origWhen=<tomorrow same alarm time>
+Alarm clock:
+  triggerTime=<tomorrow same alarm time>
+```
 
 ## Permission Model
 
@@ -148,8 +177,8 @@ Keep Android permission APIs in presentation/runtime code. Do not move `Context`
 ## Known Gaps
 
 - Direct Boot / before-unlock reboot recovery is not implemented.
-- The current alarm is one-shot; daily rescheduling is not implemented yet.
-- The reader challenge is not implemented yet.
 - Multiple alarms are not implemented yet.
+- Reader challenge is not implemented yet.
+- Snooze is not implemented yet.
 - The notification uses `android.R.drawable.ic_lock_idle_alarm`; replace it later with an app-owned
   monochrome notification icon.
