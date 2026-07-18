@@ -324,6 +324,10 @@ hellgate
    * provide commit comments/message suggestions,
    * and state the next commit-step.
 
+19. When suggesting a PR title, include the branch's ordinal number at the beginning of the title.
+    Example: branch `5-alarm-reboot-rescheduling` -> PR title `5. Restore enabled alarm after
+    reboot`.
+
 ---
 
 ## 9. MVP assumptions unless I say otherwise
