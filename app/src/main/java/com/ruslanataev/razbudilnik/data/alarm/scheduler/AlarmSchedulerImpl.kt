@@ -6,14 +6,14 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import com.ruslanataev.razbudilnik.domain.alarm.api.AlarmScheduler
+import com.ruslanataev.razbudilnik.domain.alarm.usecases.CalculateNextAlarmTriggerAtMillisUseCase
 import com.ruslanataev.razbudilnik.runtime.alarm.AlarmReceiver
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.time.LocalDateTime
-import java.time.ZoneId
 import javax.inject.Inject
 
 class AlarmSchedulerImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
+    private val calculateNextAlarmTriggerAtMillisUseCase: CalculateNextAlarmTriggerAtMillisUseCase,
 ) : AlarmScheduler {
 
     private val alarmManager: AlarmManager =
@@ -25,7 +25,10 @@ class AlarmSchedulerImpl @Inject constructor(
             return false
         }
 
-        val triggerAtMillis = calculateTriggerAtMillis(hour, minute)
+        val triggerAtMillis = calculateNextAlarmTriggerAtMillisUseCase(
+            hour = hour,
+            minute = minute
+        )
 
         val alarmClockInfo = AlarmManager.AlarmClockInfo(
             triggerAtMillis,
@@ -42,26 +45,6 @@ class AlarmSchedulerImpl @Inject constructor(
 
     override suspend fun cancel() {
         alarmManager.cancel(createTriggerAlarmPendingIntent())
-    }
-
-    private fun calculateTriggerAtMillis(hour: Int, minute: Int): Long {
-        val zoneId = ZoneId.systemDefault()
-        val now = LocalDateTime.now(zoneId)
-
-        var scheduledTime = now
-            .withHour(hour)
-            .withMinute(minute)
-            .withSecond(0)
-            .withNano(0)
-
-        if (!scheduledTime.isAfter(now)) {
-            scheduledTime = scheduledTime.plusDays(1)
-        }
-
-        return scheduledTime
-            .atZone(zoneId)
-            .toInstant()
-            .toEpochMilli()
     }
 
     private fun createTriggerAlarmPendingIntent(
