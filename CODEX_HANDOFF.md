@@ -21,27 +21,26 @@ Project on the original PC:
 
 Current branch:
 
-- `4-alarm-notification`
+- `5-alarm-reboot-rescheduling`
 
-Latest commit:
+Latest commits:
 
-- `c79474f Use automatic exact alarm permission flow`
+- `851b636 test: cover enabled alarm rescheduling`
+- `5314b40 feat: restore enabled alarm after reboot`
+- `47e7857 feat: add enabled alarm rescheduling use case`
+- `e1d5698 Add reliable background and lock-screen alarm delivery (#4)`
 
-Current uncommitted change:
+Current working tree:
 
-- `app/src/main/java/com/ruslanataev/razbudilnik/presentation/ui/setup/SetupRoute.kt`
-- Adds the Android runtime `POST_NOTIFICATIONS` request when the user tries to enable the alarm.
+- Clean before this handoff update.
 
 To continue on another PC:
 
 ```powershell
 git fetch origin
-git switch 4-alarm-notification
+git switch 5-alarm-reboot-rescheduling
 git pull
 ```
-
-The uncommitted `SetupRoute.kt` change must be committed and pushed on the original PC before it can
-be pulled elsewhere.
 
 ## Product Goal
 
@@ -51,10 +50,11 @@ Current MVP direction:
 
 - one alarm
 - reliable alarm delivery
+- alarm rescheduling after reboot
 - future reading challenge lasting approximately five minutes
 - future movement requirement intended to keep the user awake
 
-Do not add reader, movement, multiple-alarm, snooze, or reboot behavior in the current commit.
+Do not add reader, movement, multiple-alarm, snooze, or daily repeat behavior in this branch.
 
 ## Android Configuration
 
@@ -66,24 +66,40 @@ Because `minSdk` is 34, current Android 14 permission APIs do not need older-ver
 
 ## Current PR Goal
 
-Deliver fired alarms through a high-priority notification and full-screen intent so alarms remain
-visible when the app is backgrounded or the screen is locked.
+Restore the enabled alarm after device reboot.
 
-Implemented pieces:
+The app supports normal post-unlock reboot recovery:
 
-- alarm notification channel
-- high-priority alarm notification
-- full-screen/content intent opening `AlarmActivity`
-- `AlarmReceiver` posts the notification
-- exact scheduling uses `AlarmManager.setAlarmClock()`
-- manifest declares `USE_EXACT_ALARM`
-- obsolete `SCHEDULE_EXACT_ALARM` settings flow has been removed
-- project now supports Android 14+
+1. User enables the alarm.
+2. Device reboots.
+3. Android sends `BOOT_COMPLETED` after the first unlock.
+4. `AlarmBootReceiver` runs.
+5. `RescheduleEnabledAlarmUseCase` reads saved alarm settings.
+6. If the alarm is enabled, it schedules the saved time again.
 
-Still being completed:
+This branch does not implement Direct Boot / before-unlock alarm recovery.
 
-- request notification permission before enabling the alarm
-- test notification and full-screen behavior in all relevant device states
+## Implemented Pieces
+
+- `RescheduleEnabledAlarmUseCase`
+- `AlarmBootReceiver`
+- `RECEIVE_BOOT_COMPLETED` permission
+- Manifest receiver registration for `BOOT_COMPLETED`
+- Unit tests for enabled alarm rescheduling
+
+## Tests Already Passed
+
+Gradle:
+
+```powershell
+.\gradlew.bat testDebugUnitTest assembleDebugAndroidTest
+```
+
+Manual Tecno device smoke test:
+
+- Enabled alarm survived reboot.
+- Alarm was rescheduled after boot/unlock.
+- Alarm fired successfully after reboot.
 
 ## Permission Model
 
@@ -91,128 +107,49 @@ Exact alarm permission:
 
 - Manifest declares `android.permission.USE_EXACT_ALARM`.
 - It is automatically granted for qualifying alarm-clock use cases.
-- Razbudilnik therefore does not appear in the user-controlled **Alarms & Reminders** list.
+- Razbudilnik does not appear in the user-controlled **Alarms & Reminders** list.
 - `AlarmSchedulerImpl` still checks `alarmManager.canScheduleExactAlarms()` defensively.
-- The user intentionally kept `@RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)`
-  despite the manifest using `USE_EXACT_ALARM`; do not change it without discussing it first.
 
 Notification permission:
 
 - Manifest declares `android.permission.POST_NOTIFICATIONS`.
 - Android 13+ disables notifications by default for fresh installations.
-- It cannot be granted automatically to a normal third-party app.
-- It should be requested contextually when the user tries to enable the alarm.
-- If granted, continue enabling and scheduling the alarm.
-- If denied, leave the switch disabled.
+- It is requested contextually when the user enables the alarm.
+- If granted, the app continues enabling and scheduling.
+- If denied, the alarm stays disabled.
 
 Full-screen intent:
 
 - Manifest declares `android.permission.USE_FULL_SCREEN_INTENT`.
 - Device/OEM policy may still control whether a full-screen activity is shown.
 
-These permissions are independent. `USE_EXACT_ALARM` does not grant `POST_NOTIFICATIONS`.
+## Reliable Delivery Notes
 
-## Uncommitted Notification Permission Change
-
-`SetupRoute.kt` now:
-
-- gets `LocalContext.current`
-- registers `rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission())`
-- checks `POST_NOTIFICATIONS` before enabling
-- launches Android's system permission dialog when permission is missing
-- calls `viewModel.onEnabledChange(true)` after the user grants permission
-- does nothing after denial, leaving the switch off
-
-No ViewModel pending flag is needed. Unlike the old exact-alarm settings flow, the Activity Result
-API returns the permission result directly through its callback.
-
-Before committing:
-
-- add the missing newline at the end of `SetupRoute.kt`
-- review `git diff --check`
-- test the permission flow on the Android 14 phone
-
-Suggested commit message:
-- `Request notification permission before enabling alarm`
-
-Suggested commit body:
+The app package name is intentionally:
 
 ```text
-Request POST_NOTIFICATIONS when the user enables the alarm.
-Continue scheduling after permission is granted.
-Keep the alarm disabled when permission is denied.
+com.ruslanataev.razbudilnik.alarm
 ```
 
-## Confirmed Device Diagnosis
-
-Physical test device:
-
-- Tecno Pova Neo 3
-- Android 14
-- ADB serial used on the original PC: `1006925392001182`
-
-ADB confirmed:
-
-- `USE_EXACT_ALARM: granted=true`
-- `USE_FULL_SCREEN_INTENT: granted=true`
-- `POST_NOTIFICATIONS: granted=false`
-- Android scheduled the `RTC_WAKEUP` alarm successfully
-- `AlarmReceiver` was triggered
-
-The previous silent alarm was caused by `AlarmNotificationHelper` returning when notification
-permission was denied. Exact alarm scheduling was working.
-
-## Required Tests For Current Commit
-
-Fresh permission flow:
-
-1. Revoke notification permission or reinstall the app.
-2. Set the alarm two minutes ahead.
-3. Enable the switch.
-4. Confirm Android shows the notification permission dialog.
-5. Grant permission.
-6. Confirm the switch becomes enabled and the alarm is scheduled.
-
-Denial flow:
-
-1. Revoke notification permission.
-2. Try to enable the alarm.
-3. Deny permission.
-4. Confirm the switch remains disabled.
-
-Alarm delivery smoke test:
-
-1. Grant notification permission.
-2. Schedule the alarm two minutes ahead.
-3. Press Home and lock the phone.
-4. Confirm the screen turns on, `AlarmActivity` appears, sound loops, and Stop ends the sound.
-5. Repeat with the phone unlocked.
-6. Repeat after swiping the app from Recents.
-
-Do not use Android **Force stop** as a normal alarm test. Force-stopped apps are intentionally
-blocked until launched again.
-
-## Known Gaps
-
-- If notification permission is revoked while an alarm is already enabled, app state is not yet
-  reconciled on resume.
-- Permanent notification denial has no explanatory dialog or app-settings fallback yet.
-- Alarm sound currently starts inside `AlarmActivity`. If Android shows only a heads-up notification
-  and does not launch the full-screen activity, looping sound may not start.
-- Alarm rescheduling after device reboot is not implemented.
-- The current alarm is one-shot; daily rescheduling is not implemented yet.
-- The notification uses `android.R.drawable.ic_lock_idle_alarm`; replace it later with an app-owned
-  monochrome notification icon.
-- Gradle compilation was not completed in Codex because downloading the Java 21 toolchain failed.
-  Build from Android Studio or retry when the toolchain/network is available.
+Do not change it casually. On Tecno, background/lock-screen alarm delivery started working reliably
+only after the package name included an alarm-related word.
 
 ## Architecture Boundaries
 
 - `presentation`: Activities, Compose screens, routes, ViewModels
 - `domain`: use cases and framework-free abstractions
 - `data`: scheduler and repository implementations
-- `runtime`: Android entry points such as `BroadcastReceiver` and future services
+- `runtime`: Android entry points such as `BroadcastReceiver` and `Service`
 - `di`: dependency wiring
 
-Keep Android permission APIs in presentation/runtime code. Do not move `Context`, `Manifest`, or
-Activity Result APIs into the ViewModel or domain layer.
+Keep Android permission APIs in presentation/runtime code. Do not move `Context`, `Manifest`,
+`BroadcastReceiver`, or Activity Result APIs into the ViewModel or domain layer.
+
+## Known Gaps
+
+- Direct Boot / before-unlock reboot recovery is not implemented.
+- The current alarm is one-shot; daily rescheduling is not implemented yet.
+- The reader challenge is not implemented yet.
+- Multiple alarms are not implemented yet.
+- The notification uses `android.R.drawable.ic_lock_idle_alarm`; replace it later with an app-owned
+  monochrome notification icon.

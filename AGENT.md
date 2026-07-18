@@ -199,6 +199,10 @@ hellgate
 
 13. Do not touch, edit, stage, commit, move, delete, generate, or otherwise modify anything unless I directly ask for that specific action. The keyword `hellgate` allows edits, but it does not imply permission to change unrelated files or perform adjacent cleanup.
 
+14. I perform all project changes, Git operations, builds, and tests myself by default. Show the
+    exact code and commands in the chat so I can apply and run them. Only perform an action for me
+    as a last resort when I explicitly ask you to do that action and say `hellgate`.
+
 ---
 
 ## 7. Code output rules
@@ -319,6 +323,10 @@ hellgate
    * ask for or note the test result,
    * provide commit comments/message suggestions,
    * and state the next commit-step.
+
+19. When suggesting a PR title, include the branch's ordinal number at the beginning of the title.
+    Example: branch `5-alarm-reboot-rescheduling` -> PR title `5. Restore enabled alarm after
+    reboot`.
 
 ---
 
