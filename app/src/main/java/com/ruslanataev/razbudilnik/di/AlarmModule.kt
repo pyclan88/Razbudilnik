@@ -1,7 +1,9 @@
 package com.ruslanataev.razbudilnik.di
 
+import com.ruslanataev.razbudilnik.data.alarm.repository.DirectBootAlarmSnapshotRepositoryImpl
 import com.ruslanataev.razbudilnik.data.alarm.scheduler.AlarmSchedulerImpl
 import com.ruslanataev.razbudilnik.domain.alarm.api.AlarmScheduler
+import com.ruslanataev.razbudilnik.domain.alarm.api.DirectBootAlarmSnapshotRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -17,4 +19,10 @@ abstract class AlarmModule {
     abstract fun bindAlarmScheduler(
         schedulerImpl: AlarmSchedulerImpl,
     ): AlarmScheduler
+
+    @Binds
+    @Singleton
+    abstract fun bindDirectBootAlarmSnapshotRepository(
+        repositoryImpl: DirectBootAlarmSnapshotRepositoryImpl,
+    ): DirectBootAlarmSnapshotRepository
 }
