@@ -75,8 +75,6 @@ class AlarmRingingService : Service() {
         stopSelf()
     }
 
-    // Edited: some OEM firmware ignores Activity.setTurnScreenOn(), so this
-    // bounded fallback is required while the display is off.
     @Suppress("DEPRECATION")
     private fun wakeScreenIfNecessary() {
         val powerManager = getSystemService(PowerManager::class.java)
@@ -90,7 +88,6 @@ class AlarmRingingService : Service() {
                     PowerManager.ACQUIRE_CAUSES_WAKEUP,
             "$packageName:alarm-screen",
         ).apply {
-            // Added: the timeout prevents an indefinitely held wake lock.
             acquire(SCREEN_WAKE_TIMEOUT_MILLIS)
         }
     }
