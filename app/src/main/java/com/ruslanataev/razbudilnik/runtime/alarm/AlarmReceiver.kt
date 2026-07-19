@@ -3,6 +3,8 @@ package com.ruslanataev.razbudilnik.runtime.alarm
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.UserManager
+import com.ruslanataev.razbudilnik.domain.alarm.usecases.RescheduleDirectBootAlarmUseCase
 import com.ruslanataev.razbudilnik.domain.alarm.usecases.RescheduleEnabledAlarmUseCase
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -15,6 +17,9 @@ class AlarmReceiver : BroadcastReceiver() {
 
     @Inject
     lateinit var rescheduleEnabledAlarmUseCase: RescheduleEnabledAlarmUseCase
+
+    @Inject
+    lateinit var rescheduleDirectBootAlarmUseCase: RescheduleDirectBootAlarmUseCase
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != ACTION_TRIGGER_ALARM) {
@@ -36,7 +41,13 @@ class AlarmReceiver : BroadcastReceiver() {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                rescheduleEnabledAlarmUseCase()
+                val userManager = context.getSystemService(UserManager::class.java)
+
+                if (userManager?.isUserUnlocked == true) {
+                    rescheduleEnabledAlarmUseCase()
+                } else {
+                    rescheduleDirectBootAlarmUseCase()
+                }
             } finally {
                 pendingResult.finish()
             }
