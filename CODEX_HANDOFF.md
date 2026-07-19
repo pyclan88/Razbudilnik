@@ -6,179 +6,288 @@ Read `AGENT.md` before doing anything.
 
 Important rules:
 
-- Respond only in English and correct the user's English.
-- Do not modify files unless the user says `hellgate`.
-- Even after `hellgate`, modify only what the user directly requested.
-- Git is read-only unless the user explicitly requests a particular Git mutation.
-- Show concrete code suggestions and clearly highlight edited code.
-- Explain suggested code clearly enough that the user understands what they are writing.
-- Keep PR work split into small, testable commits.
-- PR titles must include the branch's ordinal number. Example:
-  `6. Reschedule alarm after it rings`.
+- Respond only in English and always correct the user's English.
+- Do not modify anything unless the user explicitly requests that action and says `hellgate`.
+- The user performs code changes, builds, tests, and Git operations by default.
+- Treat Git as read-only unless the user explicitly requests a particular Git mutation.
+- Always show concrete code suggestions with exact paths and explanatory code comments.
+- Follow strict Clean Architecture boundaries and the project's model naming rules.
+- Work in one logical commit-step at a time.
+- End every commit-step with review, testing, a commit message, and the next step.
+- PR titles begin with the branch ordinal number.
 
 ## Repository State
 
-Project on the original PC:
+Project path on this PC:
 
-- `C:\Users\Pyclan\AndroidStudioProjects\Razbudilnik`
+```text
+C:\Users\Asus\AndroidStudioProjects\Razbudilnik
+```
 
 Current branch:
 
-- `6-daily-alarm-rescheduling`
+```text
+7-direct-boot-alarm-restore
+```
 
-Latest commits:
+Base branch:
 
-- `d5ab67b test: cover next alarm trigger calculation`
-- `e728e70 refactor: extract next alarm trigger calculation`
-- `b93aae4 5. Restore enabled alarm after reboot (#5)`
-- `e1d5698 Add reliable background and lock-screen alarm delivery (#4)`
+```text
+master
+```
 
-Current working tree before this handoff update:
+Latest local commits:
 
-- Clean.
+```text
+b2912c7 chore: clean up direct boot runtime code
+0142feb feat: deliver direct boot alarms on the lock screen
+f2130b4 feat: reschedule alarm from direct boot snapshot
+bb63d7e feat: synchronize direct boot alarm snapshot
+d1a0943 feat: persist direct boot alarm snapshot
+a8e7de8 feat: add direct boot alarm snapshot contract
+3726747 6. Reschedule alarm after it rings (#6)
+```
 
-To continue on another PC:
+Important remote state at handoff time:
+
+- `origin/7-direct-boot-alarm-restore` points to `0142feb`.
+- Local commit `b2912c7` has not been pushed yet.
+- This handoff update also needs to be committed before changing PCs.
+
+Before leaving this PC, the user should run:
+
+```powershell
+.\gradlew.bat testDebugUnitTest assembleDebug
+git status
+git add codex_handoff.md
+git commit -m "docs: update project handoff"
+git push
+```
+
+On the other PC:
 
 ```powershell
 git fetch origin
-git switch 6-daily-alarm-rescheduling
+git switch 7-direct-boot-alarm-restore
 git pull
 ```
-
-## Product Goal
-
-Razbudilnik is an Android alarm clock with a future reader challenge.
-
-Current MVP direction:
-
-- one alarm
-- reliable alarm delivery
-- alarm rescheduling after reboot
-- daily rescheduling after the alarm fires
-- future reading challenge lasting approximately five minutes
-- future movement requirement intended to keep the user awake
-
-Do not add reader, movement, multiple-alarm, snooze, or Direct Boot behavior in this branch.
 
 ## Android Configuration
 
 - `minSdk = 34` (Android 14)
 - `targetSdk = 36`
 - `compileSdk = 36.1`
+- Application ID: `com.ruslanataev.razbudilnik.alarm`
 
-Because `minSdk` is 34, current Android 14 permission APIs do not need older-version guards.
+The alarm-related application ID is intentional. Tecno background and lock-screen behavior became
+more reliable after the package name identified the app as an alarm application.
 
 ## Current PR Goal
 
-Make the one enabled alarm behave as a daily alarm.
+PR 7 makes the enabled alarm survive a reboot and ring before the first device unlock.
 
-The app now supports this flow:
+Expected flow:
 
-1. User enables the alarm.
-2. Android schedules the next occurrence.
-3. Alarm fires.
-4. `AlarmReceiver` starts `AlarmRingingService` immediately.
-5. `AlarmReceiver` calls `RescheduleEnabledAlarmUseCase`.
-6. If the saved alarm is still enabled, Android schedules the next occurrence, usually tomorrow at
-   the same time.
+1. Saving alarm time or enabled state updates normal DataStore settings.
+2. The same operation synchronizes a minimal snapshot into device-protected storage.
+3. After reboot, `LOCKED_BOOT_COMPLETED` reaches `AlarmBootReceiver` while the user is locked.
+4. `RescheduleDirectBootAlarmUseCase` reads the device-protected snapshot.
+5. Android schedules the exact alarm without accessing credential-protected DataStore.
+6. When the alarm fires before unlock, `AlarmReceiver` starts the ringing service and activity.
+7. The receiver uses the snapshot to schedule the next daily occurrence while still locked.
+8. After user unlock, normal DataStore settings become authoritative again.
 
-## Implemented Pieces
+## Implemented Architecture
 
-- Extracted `CalculateNextAlarmTriggerAtMillisUseCase`.
-- Added Hilt `TimeModule` to provide `java.time.Clock`.
-- Updated `AlarmSchedulerImpl` to delegate trigger-time calculation to the use case.
-- Added unit tests for next trigger-time calculation.
-- Updated `AlarmReceiver` to reschedule the enabled alarm after it fires.
-- `AlarmReceiver` uses `goAsync()` so suspend rescheduling can finish safely.
-- `AlarmReceiver` starts ringing before rescheduling, so alarm sound is not delayed by DataStore
-  reads or scheduling work.
+Domain:
 
-## Tests Already Passed
+- `domain/alarm/api/DirectBootAlarmSnapshotRepository.kt`
+- `domain/alarm/models/DirectBootAlarmSnapshot.kt`
+- `domain/alarm/usecases/SynchronizeDirectBootAlarmSnapshotUseCase.kt`
+- `domain/alarm/usecases/RescheduleDirectBootAlarmUseCase.kt`
 
-Gradle:
+Data:
 
-```powershell
-.\gradlew.bat testDebugUnitTest
-.\gradlew.bat testDebugUnitTest assembleDebug
-```
+- `data/alarm/models/DirectBootAlarmSnapshotDto.kt`
+- `data/alarm/mappers/DirectBootAlarmSnapshotDtoToDirectBootAlarmSnapshotMapper.kt`
+- `data/alarm/mappers/DirectBootAlarmSnapshotToDirectBootAlarmSnapshotDtoMapper.kt`
+- `data/alarm/repository/DirectBootAlarmSnapshotRepositoryImpl.kt`
 
-Unit tests confirmed:
+Runtime:
 
-- future alarm time schedules today
-- past alarm time schedules tomorrow
-- alarm time equal to current time schedules tomorrow
+- `AlarmBootReceiver` handles both `LOCKED_BOOT_COMPLETED` and `BOOT_COMPLETED`.
+- `AlarmReceiver` selects direct-boot or normal rescheduling through `UserManager.isUserUnlocked`.
+- `AlarmActivity`, `AlarmRingingService`, `AlarmReceiver`, and `AlarmBootReceiver` are
+  `directBootAware` in the manifest.
+- `AlarmRingingService` contains a bounded screen-wake fallback for OEM firmware.
 
-Manual Tecno device smoke test:
+DI and synchronization:
 
-- Alarm set for `17:53` fired and was stopped.
-- After stopping it, ADB confirmed the next exact alarm was scheduled for
-  `2026-07-19 17:53:00.000`.
+- `AlarmModule` binds `DirectBootAlarmSnapshotRepositoryImpl` to the domain repository.
+- `SaveAlarmTimeUseCase` synchronizes the direct-boot snapshot after saving time.
+- `SaveAlarmEnabledUseCase` synchronizes the snapshot after saving enabled state.
 
-Useful ADB check:
+Tests:
 
-```powershell
-adb shell dumpsys alarm | Select-String -Pattern "com.ruslanataev.razbudilnik.alarm" -Context 5,10
-```
+- `RescheduleDirectBootAlarmUseCaseTest` covers enabled, disabled, and missing snapshots.
 
-Expected proof in output:
+## Device-Protected Storage
 
-```text
-packageName =com.ruslanataev.razbudilnik.alarm
-tag=*walarm*:com.ruslanataev.razbudilnik.action.TRIGGER_ALARM
-type=RTC_WAKEUP origWhen=<tomorrow same alarm time>
-Alarm clock:
-  triggerTime=<tomorrow same alarm time>
-```
-
-## Permission Model
-
-Exact alarm permission:
-
-- Manifest declares `android.permission.USE_EXACT_ALARM`.
-- It is automatically granted for qualifying alarm-clock use cases.
-- Razbudilnik does not appear in the user-controlled **Alarms & Reminders** list.
-- `AlarmSchedulerImpl` still checks `alarmManager.canScheduleExactAlarms()` defensively.
-
-Notification permission:
-
-- Manifest declares `android.permission.POST_NOTIFICATIONS`.
-- Android 13+ disables notifications by default for fresh installations.
-- It is requested contextually when the user enables the alarm.
-- If granted, the app continues enabling and scheduling.
-- If denied, the alarm stays disabled.
-
-Full-screen intent:
-
-- Manifest declares `android.permission.USE_FULL_SCREEN_INTENT`.
-- Device/OEM policy may still control whether a full-screen activity is shown.
-
-## Reliable Delivery Notes
-
-The app package name is intentionally:
+The snapshot uses synchronous `SharedPreferences.commit()` on `Dispatchers.IO` because the data must
+be durable before a reboot. It is stored under the device-protected context:
 
 ```text
-com.ruslanataev.razbudilnik.alarm
+/data/user_de/0/com.ruslanataev.razbudilnik.alarm/shared_prefs/direct_boot_alarm_snapshot.xml
 ```
 
-Do not change it casually. On Tecno, background/lock-screen alarm delivery started working reliably
-only after the package name included an alarm-related word.
+Example verification command:
 
-## Architecture Boundaries
+```powershell
+$adb = Join-Path $env:LOCALAPPDATA 'Android\Sdk\platform-tools\adb.exe'
+& $adb shell run-as com.ruslanataev.razbudilnik.alarm cat /data/user_de/0/com.ruslanataev.razbudilnik.alarm/shared_prefs/direct_boot_alarm_snapshot.xml
+```
 
-- `presentation`: Activities, Compose screens, routes, ViewModels
-- `domain`: use cases and framework-free abstractions
-- `data`: scheduler and repository implementations
-- `runtime`: Android entry points such as `BroadcastReceiver` and `Service`
-- `di`: dependency wiring
+Expected values are `hour`, `minute`, and `enabled`.
 
-Keep Android permission APIs in presentation/runtime code. Do not move `Context`, `Manifest`,
-`BroadcastReceiver`, or Activity Result APIs into the ViewModel or domain layer.
+## Verified Device Behavior
 
-## Known Gaps
+Physical-device Direct Boot test passed on the connected Tecno Android 14 device:
 
-- Direct Boot / before-unlock reboot recovery is not implemented.
-- Multiple alarms are not implemented yet.
-- Reader challenge is not implemented yet.
-- Snooze is not implemented yet.
-- The notification uses `android.R.drawable.ic_lock_idle_alarm`; replace it later with an app-owned
-  monochrome notification icon.
+- Alarm was enabled for `21:22`.
+- Device rebooted and remained in `RUNNING_LOCKED` state.
+- `LOCKED_BOOT_COMPLETED` was sent at approximately `21:17:46`.
+- Android started the app process for `AlarmBootReceiver`.
+- The exact `21:22` alarm appeared as the next wake-from-idle alarm.
+- Tecno froze the app process, then unfroze it at exactly `21:22:00` for the alarm.
+- `AlarmRingingService` started successfully.
+- `AlarmActivity` opened, drew, and received focus before first unlock.
+- The screen turned on and the alarm sound played.
+- The Stop action finished the activity and foreground service at `21:22:12`.
+- Android scheduled the next occurrence for the following day at `21:22`.
+- No application crash occurred.
+
+## OEM Screen-Wake Finding
+
+The modern APIs remain enabled:
+
+- `Activity.setShowWhenLocked(true)`
+- `Activity.setTurnScreenOn(true)`
+- manifest `showWhenLocked="true"`
+- manifest `turnScreenOn="true"`
+
+However, a controlled Tecno test at `20:49` showed that the activity launched and rendered while
+the device remained `Asleep`. Therefore, `setTurnScreenOn()` alone is insufficient on this firmware.
+
+`AlarmRingingService` now uses a compatibility fallback only when `PowerManager.isInteractive` is
+false:
+
+- `SCREEN_BRIGHT_WAKE_LOCK`
+- `ACQUIRE_CAUSES_WAKEUP`
+- ten-second timeout
+- explicit release when the alarm stops or the service is destroyed
+
+The APIs are deprecated, but the fallback is intentional, bounded, documented, and validated. A
+second test at `20:59` changed the device from `Asleep` to `Awake` and displayed `AlarmActivity`.
+
+The manifest declares `android.permission.WAKE_LOCK`; it is a normal permission and has no runtime
+dialog.
+
+## Permissions and OEM Setup
+
+The app currently depends on:
+
+- exact alarm access through `USE_EXACT_ALARM`
+- notification permission on Android 13+
+- full-screen intent access
+- foreground-service media playback permission
+- Tecno's separate lock-screen overlay permission
+
+On the tested Tecno device, the OS displayed:
+
+```text
+Razbudilnik requests to display an overlay on the lock screen. Allow?
+```
+
+This OEM permission had to be allowed. It is not a standard Android runtime-permission dialog.
+
+## Review Status
+
+The complete branch was reviewed against `master`:
+
+- no blocking functional findings
+- working tree was clean before this handoff edit
+- branch contains small logical commits
+- `git diff --check` passed
+- strict layer boundaries are preserved
+- manual end-to-end Direct Boot delivery passed
+
+The cleanup commit `b2912c7` removed temporary suggestion markers, fixed wake-lock indentation, and
+added the missing final newline. A final Gradle result after this cleanup was not reported yet, so
+run `testDebugUnitTest assembleDebug` before opening the PR.
+
+## PR Content
+
+Title:
+
+```text
+7. Restore enabled alarms during Direct Boot
+```
+
+Description:
+
+```markdown
+## Summary
+
+Restore an enabled alarm after reboot before the user unlocks the device.
+
+## Changes
+
+- Add a minimal direct-boot alarm snapshot stored in device-protected storage.
+- Synchronize the snapshot when alarm time or enabled state changes.
+- Handle `LOCKED_BOOT_COMPLETED` using the direct-boot snapshot.
+- Continue using normal alarm settings after the user unlocks the device.
+- Mark alarm runtime components as direct-boot aware.
+- Reschedule the next alarm after one fires while the device is locked.
+- Add a bounded screen-wake fallback for OEMs that ignore `turnScreenOn`.
+
+## Testing
+
+- Ran `testDebugUnitTest` and `assembleDebug`.
+- Enabled an alarm and rebooted the device.
+- Kept the device in the `RUNNING_LOCKED` state.
+- Verified that `LOCKED_BOOT_COMPLETED` restored the exact alarm.
+- Verified that the alarm fired at 21:22 before the first unlock.
+- Verified that the sound started and the screen turned on.
+- Verified that `AlarmActivity` appeared and the Stop action worked.
+- Verified that the next day's alarm was scheduled.
+
+## Limitations
+
+- The app still supports one alarm configuration.
+- The OEM wake fallback uses deprecated APIs intentionally and releases automatically.
+- Direct Boot behavior has currently been tested on one physical Android 14 device.
+```
+
+Only claim the Gradle test line after the final command succeeds.
+
+## Next Action
+
+This PR is feature-complete. Do not add more functionality to branch 7.
+
+Next steps:
+
+1. Run the final Gradle tests and build.
+2. Commit this handoff update.
+3. Push the local cleanup and handoff commits.
+4. Open PR 7 using the title and description above.
+5. Merge only after the PR checks and review pass.
+6. Start a new numbered branch for the next feature.
+
+## Known Product Gaps
+
+- Multiple alarms are not implemented.
+- Reader challenge is not implemented.
+- Movement requirement is not implemented.
+- Snooze is not implemented.
+- Notification still uses `android.R.drawable.ic_lock_idle_alarm` instead of an app-owned icon.
+- Direct Boot has not yet been tested across every supported device/OEM combination.
