@@ -7,10 +7,13 @@ import android.content.pm.ServiceInfo
 import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.IBinder
+import android.os.PowerManager
 
 class AlarmRingingService : Service() {
 
     private var ringtone: Ringtone? = null
+
+    private var screenWakeLock: PowerManager.WakeLock? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
@@ -31,10 +34,15 @@ class AlarmRingingService : Service() {
     override fun onDestroy() {
         ringtone?.stop()
         ringtone = null
+
+        releaseScreenWakeLock()
+
         super.onDestroy()
     }
 
     private fun startAlarm(hour: Int, minute: Int) {
+        wakeScreenIfNecessary()
+
         val notification = AlarmNotificationHelper(this).createAlarmNotification(hour, minute)
 
         startForeground(
@@ -60,8 +68,36 @@ class AlarmRingingService : Service() {
     private fun stopAlarm() {
         ringtone?.stop()
         ringtone = null
+
+        releaseScreenWakeLock()
+
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
+    }
+
+    @Suppress("DEPRECATION")
+    private fun wakeScreenIfNecessary() {
+        val powerManager = getSystemService(PowerManager::class.java)
+
+        if (powerManager.isInteractive) {
+            return
+        }
+
+        screenWakeLock = powerManager.newWakeLock(
+            PowerManager.SCREEN_BRIGHT_WAKE_LOCK or
+                    PowerManager.ACQUIRE_CAUSES_WAKEUP,
+            "$packageName:alarm-screen",
+        ).apply {
+            acquire(SCREEN_WAKE_TIMEOUT_MILLIS)
+        }
+    }
+
+    private fun releaseScreenWakeLock() {
+        screenWakeLock
+            ?.takeIf(PowerManager.WakeLock::isHeld)
+            ?.release()
+
+        screenWakeLock = null
     }
 
     companion object {
@@ -69,6 +105,7 @@ class AlarmRingingService : Service() {
         private const val ACTION_STOP = "com.ruslanataev.razbudilnik.action.STOP_ALARM"
         private const val EXTRA_HOUR = "extra_hour"
         private const val EXTRA_MINUTE = "extra_minute"
+        private const val SCREEN_WAKE_TIMEOUT_MILLIS = 10_000L
 
         fun createStartIntent(context: Context, hour: Int, minute: Int) =
             Intent(context, AlarmRingingService::class.java).apply {
