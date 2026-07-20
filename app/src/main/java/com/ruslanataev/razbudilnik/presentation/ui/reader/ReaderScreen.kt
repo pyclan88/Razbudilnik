@@ -12,15 +12,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ruslanataev.razbudilnik.presentation.ui.reader.states.ReaderUiState
+import kotlin.math.abs
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun ReaderScreen(
     state: ReaderUiState,
-    onReaderInteractionChanged: (isFingerDown: Boolean, isFingerMoving: Boolean) -> Unit,
+    onReaderInteractionChanged: (isFingerDown: Boolean, movementDistancePx: Float) -> Unit,
     onNextPageClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -32,14 +34,18 @@ fun ReaderScreen(
                 awaitEachGesture {
                     val down = awaitFirstDown()
 
-                    onReaderInteractionChanged(true, false)
+                    onReaderInteractionChanged(true, 0f)
 
                     drag(down.id) { change ->
-                        onReaderInteractionChanged(true, true)
+                        val movementDistancePx =
+                            abs(change.positionChange().x) + abs(change.positionChange().y)
+
+                        onReaderInteractionChanged(true, movementDistancePx)
+
                         change.consume()
                     }
 
-                    onReaderInteractionChanged(false, false)
+                    onReaderInteractionChanged(false, 0f)
                 }
             },
         verticalArrangement = Arrangement.spacedBy(16.dp),

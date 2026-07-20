@@ -7,6 +7,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ruslanataev.razbudilnik.presentation.ui.reader.viewmodel.ReaderViewModel
@@ -20,14 +22,16 @@ fun ReaderRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
+    val requiredMovementDistancePx = with(LocalDensity.current) { 64.dp.toPx() }
+
     var isFingerDown by remember { mutableStateOf(false) }
-    var hasMovedSinceLastTick by remember { mutableStateOf(false) }
+    var movementDistanceSinceLastTick by remember { mutableStateOf(0f) }
 
     LaunchedEffect(Unit) {
         while (true) {
             delay(1.seconds)
 
-            val isFingerMovingNow = hasMovedSinceLastTick
+            val isFingerMovingNow = movementDistanceSinceLastTick >= requiredMovementDistancePx
 
             viewModel.onReadingInteractionTick(
                 elapsedTime = 1.seconds,
@@ -35,23 +39,22 @@ fun ReaderRoute(
                 isFingerMoving = isFingerMovingNow,
             )
 
-            hasMovedSinceLastTick = false
+            movementDistanceSinceLastTick = 0f
         }
     }
 
     ReaderScreen(
         state = state,
-        onReaderInteractionChanged = { fingerDown, fingerMoving ->
+        onReaderInteractionChanged = { fingerDown, movementDistancePx ->
             isFingerDown = fingerDown
+            movementDistanceSinceLastTick += movementDistancePx
 
-            if (fingerMoving) {
-                hasMovedSinceLastTick = true
-            }
+            val isFingerMovingEnough = movementDistanceSinceLastTick >= requiredMovementDistancePx
 
             viewModel.onReadingInteractionTick(
                 elapsedTime = 0.seconds,
                 isFingerDown = fingerDown,
-                isFingerMoving = fingerMoving,
+                isFingerMoving = isFingerMovingEnough,
             )
         },
         onNextPageClick = {
