@@ -54,7 +54,9 @@ fun ReaderRoute(
                 isFingerMoving = fingerMoving,
             )
         },
-        onNextPageClick = {},
+        onNextPageClick = {
+            viewModel.onNextPageClick()
+        },
         modifier = modifier,
     )
 }

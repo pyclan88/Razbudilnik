@@ -22,7 +22,7 @@ class ReaderViewModel @Inject constructor(
     private val updateReaderChallengeProgressUseCase: UpdateReaderChallengeProgressUseCase,
 ) : ViewModel() {
 
-    private val challenge: ReaderChallenge = getReaderChallengeUseCase()
+    private var challenge: ReaderChallenge = getReaderChallengeUseCase()
     private var progress: ReaderChallengeProgress = createInitialReaderChallengeProgressUseCase()
 
     private val _state: MutableStateFlow<ReaderUiState> = MutableStateFlow(
@@ -45,7 +45,32 @@ class ReaderViewModel @Inject constructor(
             isFingerMoving = isFingerMoving,
         )
 
-        _state.value = ReaderChallengeToReaderUiStateMapper.map(
+        updateState()
+    }
+
+    fun onNextPageClick() {
+        if (!progress.canGoToNextPage) {
+            return
+        }
+
+        val nextPageIndex = challenge.currentPageIndex + 1
+
+        if (nextPageIndex >= challenge.pages.size) {
+            return
+        }
+
+        challenge = challenge.copy(currentPageIndex = nextPageIndex)
+        progress = createInitialReaderChallengeProgressUseCase()
+
+        updateState()
+    }
+
+    private fun updateState() {
+        _state.value = createUiState()
+    }
+
+    private fun createUiState(): ReaderUiState {
+        return ReaderChallengeToReaderUiStateMapper.map(
             challenge = challenge,
             progress = progress,
         )

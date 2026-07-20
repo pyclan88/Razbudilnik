@@ -3,7 +3,7 @@ package com.ruslanataev.razbudilnik.domain.reader.usecases
 import com.ruslanataev.razbudilnik.domain.reader.models.ReaderChallengeProgress
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.ZERO
-import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 class CreateInitialReaderChallengeProgressUseCase @Inject constructor() {
 
@@ -17,6 +17,6 @@ class CreateInitialReaderChallengeProgressUseCase @Inject constructor() {
     }
 
     private companion object {
-        val REQUIRED_READING_TIME = 3.minutes
+        val REQUIRED_READING_TIME = 10.seconds
     }
 }
