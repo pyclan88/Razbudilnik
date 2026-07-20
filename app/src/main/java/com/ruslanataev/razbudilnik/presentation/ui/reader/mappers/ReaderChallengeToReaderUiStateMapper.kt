@@ -1,0 +1,25 @@
+package com.ruslanataev.razbudilnik.presentation.ui.reader.mappers
+
+import com.ruslanataev.razbudilnik.domain.reader.models.ReaderChallenge
+import com.ruslanataev.razbudilnik.domain.reader.models.ReaderChallengeProgress
+import com.ruslanataev.razbudilnik.presentation.ui.reader.states.ReaderUiState
+
+object ReaderChallengeToReaderUiStateMapper {
+
+    fun map(
+        challenge: ReaderChallenge,
+        progress: ReaderChallengeProgress,
+    ): ReaderUiState {
+        val currentPage = challenge.pages[challenge.currentPageIndex]
+
+        return ReaderUiState(
+            pageText = currentPage.text,
+            pageNumber = challenge.currentPageIndex + 1,
+            pageCount = challenge.pages.size,
+            activeReadingTime = progress.activeReadingTime,
+            requiredReadingTime = progress.requiredReadingTime,
+            canGoToNextPage = progress.canGoToNextPage,
+            shouldMuteAlarm = progress.shouldMuteAlarm,
+        )
+    }
+}
