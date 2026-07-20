@@ -23,14 +23,11 @@ class ReaderViewModel @Inject constructor(
 ) : ViewModel() {
 
     private var challenge: ReaderChallenge = getReaderChallengeUseCase()
-    private var progress: ReaderChallengeProgress = createInitialReaderChallengeProgressUseCase()
+    private var progressByPageIndex: List<ReaderChallengeProgress> = challenge.pages.map {
+        createInitialReaderChallengeProgressUseCase()
+    }
 
-    private val _state: MutableStateFlow<ReaderUiState> = MutableStateFlow(
-        ReaderChallengeToReaderUiStateMapper.map(
-            challenge = challenge,
-            progress = progress,
-        ),
-    )
+    private val _state: MutableStateFlow<ReaderUiState> = MutableStateFlow(createUiState())
     val state: StateFlow<ReaderUiState> = _state.asStateFlow()
 
     fun onReadingInteractionTick(
@@ -38,18 +35,31 @@ class ReaderViewModel @Inject constructor(
         isFingerDown: Boolean,
         isFingerMoving: Boolean,
     ) {
-        progress = updateReaderChallengeProgressUseCase(
-            progress = progress,
+        val currentPageIndex = challenge.currentPageIndex
+        val currentProgress = progressByPageIndex[currentPageIndex]
+
+        val updateProgress = updateReaderChallengeProgressUseCase(
+            progress = currentProgress,
             elapsedTime = elapsedTime,
             isFingerDown = isFingerDown,
             isFingerMoving = isFingerMoving,
         )
 
+        progressByPageIndex = progressByPageIndex.mapIndexed { index, progress ->
+            if (index == currentPageIndex) {
+                updateProgress
+            } else {
+                progress
+            }
+        }
+
         updateState()
     }
 
     fun onNextPageClick() {
-        if (!progress.canGoToNextPage) {
+        val currentProgress = progressByPageIndex[challenge.currentPageIndex]
+
+        if (!currentProgress.canGoToNextPage) {
             return
         }
 
@@ -60,7 +70,6 @@ class ReaderViewModel @Inject constructor(
         }
 
         challenge = challenge.copy(currentPageIndex = nextPageIndex)
-        progress = createInitialReaderChallengeProgressUseCase()
 
         updateState()
     }
@@ -72,7 +81,7 @@ class ReaderViewModel @Inject constructor(
     private fun createUiState(): ReaderUiState {
         return ReaderChallengeToReaderUiStateMapper.map(
             challenge = challenge,
-            progress = progress,
+            progress = progressByPageIndex[challenge.currentPageIndex],
         )
     }
 }
