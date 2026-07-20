@@ -1,5 +1,8 @@
 package com.ruslanataev.razbudilnik.presentation.ui.reader
 
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,6 +11,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ruslanataev.razbudilnik.presentation.ui.reader.states.ReaderUiState
@@ -16,13 +20,28 @@ import kotlin.time.Duration.Companion.seconds
 @Composable
 fun ReaderScreen(
     state: ReaderUiState,
+    onReaderInteractionChanged: (isFingerDown: Boolean, isFingerMoving: Boolean) -> Unit,
     onNextPageClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(24.dp)
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+
+                    onReaderInteractionChanged(true, false)
+
+                    drag(down.id) { change ->
+                        onReaderInteractionChanged(true, true)
+                        change.consume()
+                    }
+
+                    onReaderInteractionChanged(false, false)
+                }
+            },
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(text = state.pageTextLabel)
@@ -53,6 +72,7 @@ private fun ReaderScreenPreview() {
             canGoToNextPage = false,
             shouldMuteAlarm = true,
         ),
+        onReaderInteractionChanged = { _, _ -> },
         onNextPageClick = {},
     )
 }

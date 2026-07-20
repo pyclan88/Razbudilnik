@@ -1,11 +1,17 @@
 package com.ruslanataev.razbudilnik.presentation.ui.reader
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ruslanataev.razbudilnik.presentation.ui.reader.viewmodel.ReaderViewModel
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun ReaderRoute(
@@ -14,8 +20,40 @@ fun ReaderRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
+    var isFingerDown by remember { mutableStateOf(false) }
+    var hasMovedSinceLastTick by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1.seconds)
+
+            val isFingerMovingNow = hasMovedSinceLastTick
+
+            viewModel.onReadingInteractionTick(
+                elapsedTime = 1.seconds,
+                isFingerDown = isFingerDown,
+                isFingerMoving = isFingerMovingNow,
+            )
+
+            hasMovedSinceLastTick = false
+        }
+    }
+
     ReaderScreen(
         state = state,
+        onReaderInteractionChanged = { fingerDown, fingerMoving ->
+            isFingerDown = fingerDown
+
+            if (fingerMoving) {
+                hasMovedSinceLastTick = true
+            }
+
+            viewModel.onReadingInteractionTick(
+                elapsedTime = 0.seconds,
+                isFingerDown = fingerDown,
+                isFingerMoving = fingerMoving,
+            )
+        },
         onNextPageClick = {},
         modifier = modifier,
     )
