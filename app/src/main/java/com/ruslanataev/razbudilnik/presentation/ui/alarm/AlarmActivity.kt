@@ -4,10 +4,12 @@ import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import com.ruslanataev.razbudilnik.presentation.ui.reader.ReaderRoute
 import com.ruslanataev.razbudilnik.presentation.ui.theme.RazbudilnikTheme
-import com.ruslanataev.razbudilnik.runtime.alarm.AlarmReceiver
 import com.ruslanataev.razbudilnik.runtime.alarm.AlarmRingingService
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class AlarmActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -15,14 +17,10 @@ class AlarmActivity : ComponentActivity() {
 
         prepareAlarmWindow()
 
-        val hour = intent.getIntExtra(AlarmReceiver.EXTRA_HOUR, 7)
-        val minute = intent.getIntExtra(AlarmReceiver.EXTRA_MINUTE, 0)
-
         setContent {
             RazbudilnikTheme {
-                AlarmScreen(
-                    time = "%02d:%02d".format(hour, minute),
-                    onStopClick = ::stopAlarm,
+                ReaderRoute(
+                    onChallengeFinished = ::stopAlarm,
                 )
             }
         }
