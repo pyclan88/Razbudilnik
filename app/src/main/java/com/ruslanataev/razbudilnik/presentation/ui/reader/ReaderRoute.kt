@@ -3,6 +3,7 @@ package com.ruslanataev.razbudilnik.presentation.ui.reader
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -25,7 +26,7 @@ fun ReaderRoute(
     val requiredMovementDistancePx = with(LocalDensity.current) { 64.dp.toPx() }
 
     var isFingerDown by remember { mutableStateOf(false) }
-    var movementDistanceSinceLastTick by remember { mutableStateOf(0f) }
+    var movementDistanceSinceLastTick by remember { mutableFloatStateOf(0f) }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -56,6 +57,9 @@ fun ReaderRoute(
                 isFingerDown = fingerDown,
                 isFingerMoving = isFingerMovingEnough,
             )
+        },
+        onPreviousPageClick = {
+            viewModel.onPreviousPageClick()
         },
         onNextPageClick = {
             viewModel.onNextPageClick()

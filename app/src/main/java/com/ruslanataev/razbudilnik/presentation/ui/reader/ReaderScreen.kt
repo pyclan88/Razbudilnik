@@ -23,6 +23,7 @@ import kotlin.time.Duration.Companion.seconds
 fun ReaderScreen(
     state: ReaderUiState,
     onReaderInteractionChanged: (isFingerDown: Boolean, movementDistancePx: Float) -> Unit,
+    onPreviousPageClick: () -> Unit,
     onNextPageClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -57,6 +58,13 @@ fun ReaderScreen(
         Text(text = state.pageText)
 
         Button(
+            enabled = state.canGoToPreviousPage,
+            onClick = onPreviousPageClick,
+        ) {
+            Text("Back")
+        }
+
+        Button(
             enabled = state.canGoToNextPage,
             onClick = onNextPageClick,
         ) {
@@ -75,10 +83,12 @@ private fun ReaderScreenPreview() {
             pageCount = 3,
             activeReadingTime = 42.seconds,
             requiredReadingTime = 180.seconds,
+            canGoToPreviousPage = false,
             canGoToNextPage = false,
             shouldMuteAlarm = true,
         ),
         onReaderInteractionChanged = { _, _ -> },
+        onPreviousPageClick = {},
         onNextPageClick = {},
     )
 }

@@ -9,6 +9,7 @@ data class ReaderUiState(
     val pageCount: Int,
     val activeReadingTime: Duration,
     val requiredReadingTime: Duration,
+    val canGoToPreviousPage: Boolean,
     val canGoToNextPage: Boolean,
     val shouldMuteAlarm: Boolean,
 ) {
@@ -27,6 +28,7 @@ data class ReaderUiState(
                 pageCount = 1,
                 activeReadingTime = ZERO,
                 requiredReadingTime = ZERO,
+                canGoToPreviousPage = false,
                 canGoToNextPage = false,
                 shouldMuteAlarm = false,
             )

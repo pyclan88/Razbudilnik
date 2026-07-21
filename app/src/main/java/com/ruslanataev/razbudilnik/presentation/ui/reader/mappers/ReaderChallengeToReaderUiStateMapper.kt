@@ -18,6 +18,7 @@ object ReaderChallengeToReaderUiStateMapper {
             pageCount = challenge.pages.size,
             activeReadingTime = progress.activeReadingTime,
             requiredReadingTime = progress.requiredReadingTime,
+            canGoToPreviousPage = challenge.currentPageIndex > 0,
             canGoToNextPage = progress.canGoToNextPage,
             shouldMuteAlarm = progress.shouldMuteAlarm,
         )

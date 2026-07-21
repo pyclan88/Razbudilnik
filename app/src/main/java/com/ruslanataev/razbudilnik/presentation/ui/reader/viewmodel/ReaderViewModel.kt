@@ -17,7 +17,7 @@ import kotlin.time.Duration
 
 @HiltViewModel
 class ReaderViewModel @Inject constructor(
-    private val getReaderChallengeUseCase: GetReaderChallengeUseCase,
+    getReaderChallengeUseCase: GetReaderChallengeUseCase,
     private val createInitialReaderChallengeProgressUseCase: CreateInitialReaderChallengeProgressUseCase,
     private val updateReaderChallengeProgressUseCase: UpdateReaderChallengeProgressUseCase,
 ) : ViewModel() {
@@ -70,6 +70,18 @@ class ReaderViewModel @Inject constructor(
         }
 
         challenge = challenge.copy(currentPageIndex = nextPageIndex)
+
+        updateState()
+    }
+
+    fun onPreviousPageClick() {
+        val previousPageIndex = challenge.currentPageIndex - 1
+
+        if (previousPageIndex < 0) {
+            return
+        }
+
+        challenge = challenge.copy(currentPageIndex = previousPageIndex)
 
         updateState()
     }
