@@ -260,6 +260,10 @@ hellgate
     snippet against the existing file. Keep these comments in suggestions shown in chat; they do not
     have to remain in the final project code unless they explain behavior that future readers need.
 
+19. Do not use phrasing like "Replace the whole file with" when suggesting edits to an existing
+    file unless the user explicitly asks for a full-file replacement. Show the exact edited section
+    with enough surrounding context, and mark the changed lines with `// Added:` or `// Edited:`.
+
 ---
 
 ## 8. Agent workflow
