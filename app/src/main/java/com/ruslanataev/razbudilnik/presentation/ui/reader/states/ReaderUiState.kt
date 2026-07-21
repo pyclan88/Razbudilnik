@@ -1,7 +1,6 @@
 package com.ruslanataev.razbudilnik.presentation.ui.reader.states
 
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.ZERO
 
 data class ReaderUiState(
     val pageText: String,
@@ -19,19 +18,4 @@ data class ReaderUiState(
 
     val pageTextLabel: String
         get() = "$pageNumber / $pageCount"
-
-    companion object {
-        fun initial(): ReaderUiState {
-            return ReaderUiState(
-                pageText = "",
-                pageNumber = 1,
-                pageCount = 1,
-                activeReadingTime = ZERO,
-                requiredReadingTime = ZERO,
-                canGoToPreviousPage = false,
-                canGoToNextPage = false,
-                shouldMuteAlarm = false,
-            )
-        }
-    }
 }
