@@ -10,6 +10,7 @@ data class ReaderUiState(
     val requiredReadingTime: Duration,
     val canGoToPreviousPage: Boolean,
     val canGoToNextPage: Boolean,
+    val canFinishChallenge: Boolean,
     val shouldMuteAlarm: Boolean,
 ) {
 

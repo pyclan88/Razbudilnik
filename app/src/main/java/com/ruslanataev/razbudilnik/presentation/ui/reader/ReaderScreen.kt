@@ -25,6 +25,7 @@ fun ReaderScreen(
     onReaderInteractionChanged: (isFingerDown: Boolean, movementDistancePx: Float) -> Unit,
     onPreviousPageClick: () -> Unit,
     onNextPageClick: () -> Unit,
+    onFinishChallengeClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -70,6 +71,13 @@ fun ReaderScreen(
         ) {
             Text("Next")
         }
+
+        Button(
+            enabled = state.canFinishChallenge,
+            onClick = onFinishChallengeClick,
+        ) {
+            Text("Finish")
+        }
     }
 }
 
@@ -85,10 +93,12 @@ private fun ReaderScreenPreview() {
             requiredReadingTime = 180.seconds,
             canGoToPreviousPage = false,
             canGoToNextPage = false,
+            canFinishChallenge = false,
             shouldMuteAlarm = true,
         ),
         onReaderInteractionChanged = { _, _ -> },
         onPreviousPageClick = {},
         onNextPageClick = {},
+        onFinishChallengeClick = {},
     )
 }

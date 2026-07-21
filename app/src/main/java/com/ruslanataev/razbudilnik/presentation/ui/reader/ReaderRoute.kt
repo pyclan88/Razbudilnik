@@ -64,6 +64,7 @@ fun ReaderRoute(
         onNextPageClick = {
             viewModel.onNextPageClick()
         },
+        onFinishChallengeClick = {},
         modifier = modifier,
     )
 }
