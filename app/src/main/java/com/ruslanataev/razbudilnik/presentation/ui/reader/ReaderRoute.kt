@@ -18,6 +18,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun ReaderRoute(
+    onChallengeFinished: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ReaderViewModel = hiltViewModel(),
 ) {
@@ -64,7 +65,7 @@ fun ReaderRoute(
         onNextPageClick = {
             viewModel.onNextPageClick()
         },
-        onFinishChallengeClick = {},
+        onFinishChallengeClick = onChallengeFinished,
         modifier = modifier,
     )
 }

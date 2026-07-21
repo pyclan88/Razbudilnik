@@ -29,6 +29,9 @@ class MainActivity : ComponentActivity() {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     if (isReaderVisible) {
                         ReaderRoute(
+                            onChallengeFinished = {
+                                isReaderVisible = false
+                            },
                             modifier = Modifier.padding(innerPadding)
                         )
                     } else {
