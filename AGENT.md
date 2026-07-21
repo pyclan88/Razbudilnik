@@ -220,7 +220,8 @@ hellgate
 
 5. When changing existing code, keep the output focused.
 
-6. Always mention the file path.
+6. Always mention the full file address/path before every code snippet or code-related suggestion.
+   Prefer the absolute project path so there is no ambiguity about which file is being discussed.
 
 7. When possible, show the exact code snippet that should change or be added in chat. Keep it focused. Do not make me extract the real answer from a wall of commentary.
 
