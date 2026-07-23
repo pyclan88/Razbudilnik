@@ -28,7 +28,7 @@ C:\Users\Asus\AndroidStudioProjects\Razbudilnik
 Current branch:
 
 ```text
-8-reader-mvp
+10-alarm-volume-protection
 ```
 
 Base branch:
@@ -37,34 +37,31 @@ Base branch:
 master
 ```
 
-Latest local commits at handoff time:
+Latest commits at handoff time:
 
 ```text
-6e6b11f fix: resume alarm when reader loses focus
-543c760 feat: mute alarm during valid reader interaction
-798981d docs: update reader handoff
-5c0658c feat: launch reader challenge from alarm
-22cdbd7 test: cover reader view model navigation
-dcdfba2 docs: require full file addresses in code suggestions
-030c558 feat: handle reader challenge completion
-4da2669 feat: show reader challenge completion action
+020c854 9. Harden alarm challenge navigation (#9)
+61c10bc 8. Add reader challenge alarm flow (#8)
+ef22d9a 7. Restore enabled alarms during Direct Boot (#7)
+3726747 6. Reschedule alarm after it rings (#6)
+b93aae4 5. Restore enabled alarm after reboot (#5)
+e1d5698 Add reliable background and lock-screen alarm delivery (#4)
 ```
 
-Before moving to another PC, the user should normally run:
+Current uncommitted commit-step at handoff time:
 
-```powershell
-.\gradlew.bat testDebugUnitTest assembleDebug
-git status
-git add CODEX_HANDOFF.md
-git commit -m "docs: finalize reader MVP handoff"
-git push
+```text
+AlarmActivity consumes Volume Down and Volume Mute key-down/key-up events while the alarm challenge
+is in the foreground.
 ```
 
-On another PC:
+The user said they will commit and push this step before continuing on the desktop.
+
+On the desktop:
 
 ```powershell
 git fetch origin
-git switch 8-reader-mvp
+git switch 10-alarm-volume-protection
 git pull
 ```
 
@@ -78,22 +75,87 @@ git pull
 The alarm-flavored application ID is intentional. On Tecno Android 14, alarm/background behavior was
 more reliable after the package name clearly identified the app as an alarm app.
 
-## Current PR Goal
+## Completed PR 8
 
 PR 8 builds the first MVP of the reader challenge and connects it to the alarm.
 
 Expected MVP behavior:
 
-1. The app can open a reader challenge manually from the setup screen.
-2. The reader shows static pages from app code.
-3. Every page has its own reading timer.
-4. Reading time counts only while the finger is down and moving enough.
-5. Slight stationary finger movement must not count as reading.
-6. The user can go back to previous pages.
-7. Going back does not reset completed progress.
-8. The final page shows a finish action after its timer is complete.
-9. When the alarm rings, `AlarmActivity` opens the reader instead of the old stop-only alarm screen.
-10. Finishing the reader challenge stops the alarm.
+1. The reader shows static pages from app code.
+2. Every page has its own reading timer.
+3. Reading time counts only while the finger is down and moving enough.
+4. Slight stationary finger movement must not count as reading.
+5. The user can go back to previous pages.
+6. Going back does not reset completed progress.
+7. The final page shows a finish action after its timer is complete.
+8. When the alarm rings, `AlarmActivity` opens the reader instead of the old stop-only alarm screen.
+9. Finishing the reader challenge stops the alarm.
+
+The temporary manual reader entry was removed in PR 9. The alarm is now the only production reader
+entry point.
+
+## Completed PR 9
+
+PR 9 hardened challenge navigation:
+
+1. `AlarmActivity` consumes Back and predictive-back navigation with Compose `BackHandler`.
+2. Completing the reader challenge is the only in-app dismissal path.
+3. Pressing Home is not blocked because Android reserves system navigation for the user.
+4. Leaving the activity restores audible alarm playback.
+5. The temporary `Open reader` button and its callback chain were removed.
+
+The user verified Back, Home/return, lock/unlock, challenge completion, sound, and notification
+cleanup on the physical Android 14 device. `testDebugUnitTest` and `assembleDebug` also passed.
+
+## Current PR 10 Goal
+
+Branch:
+
+```text
+10-alarm-volume-protection
+```
+
+Proposed PR title:
+
+```text
+10. Protect active alarm volume
+```
+
+Goal: prevent a ringing alarm from being silenced by lowering or muting the alarm volume, while
+restoring the user's original alarm-stream volume after successful challenge completion.
+
+Planned logical commit-steps:
+
+1. Consume Volume Down and Volume Mute hardware events in foreground `AlarmActivity`.
+2. Add a runtime `AlarmVolumeController` that captures, enforces, and restores
+   `AudioManager.STREAM_ALARM`.
+3. Integrate the controller with `AlarmRingingService`.
+4. Detect and reverse external alarm-volume reductions while the service is active.
+5. Test hardware buttons, system volume controls, Home/return, reading mute/resume, normal
+   completion, and service destruction.
+
+Important platform conclusions:
+
+- `Ringtone.volume` is only the ringtone player's local `0f..1f` multiplier. A low system alarm
+  stream can still make `AUDIBLE_VOLUME = 1f` quiet.
+- `AudioManager.STREAM_ALARM` represents the system alarm stream.
+- If PR 10 changes the global alarm stream, it must capture and restore the original value.
+- Foreground key interception alone is insufficient because the user can press Home and change
+  volume through system UI.
+- Do not override `ComponentActivity.dispatchKeyEvent()`: AndroidX restricts it to its library
+  group. Use public `onKeyDown()` and `onKeyUp()` callbacks instead.
+- Volume Up remains available.
+
+Current `AlarmActivity` change uses:
+
+```text
+onKeyDown() / onKeyUp()
+KEYCODE_VOLUME_DOWN
+KEYCODE_VOLUME_MUTE
+```
+
+The first step protects only the foreground activity. The service-side controller is the next
+implementation step.
 
 ## Implemented Reader Architecture
 
@@ -198,14 +260,12 @@ Verified by the user:
 
 ## Next Action
 
-PR 8 is feature-complete. Do not add more reader functionality to this branch.
-
-Next steps:
-
-1. Review the complete branch against `master`.
-2. Prepare PR 8.
-3. Merge after checks pass.
-4. Plan challenge-navigation hardening in a new numbered branch.
+1. On the desktop, fetch and switch to `10-alarm-volume-protection`.
+2. Confirm the Volume Down/Mute commit is present and the working tree is clean.
+3. Review and device-test the foreground hardware-key interception.
+4. Start commit-step 2: design and add the runtime `AlarmVolumeController`.
+5. Do not add Wake Up Check, QR/barcode missions, backup alarms, or other anti-oversleep features
+   to PR 10.
 
 ## Known Product Gaps
 
@@ -217,5 +277,9 @@ Next steps:
 - Movement uses finger motion on screen, not physical walking.
 - Reader UI is intentionally bare MVP.
 - Snooze is not implemented.
+- A post-dismissal Wake Up Check is not implemented.
+- Backup re-ringing is not implemented.
+- QR/barcode, math, squat, photo, and other alternative challenges are not implemented.
+- Power-off and force-stop prevention are not portable Android guarantees.
 - Notification still uses `android.R.drawable.ic_lock_idle_alarm` instead of an app-owned icon.
 - Direct Boot behavior has only been tested on one physical Android 14 Tecno device.
