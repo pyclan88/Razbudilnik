@@ -12,6 +12,8 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class AlarmActivity : ComponentActivity() {
 
+    private var isAlarmStopping: Boolean = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -25,6 +27,14 @@ class AlarmActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onPause() {
+        if (!isAlarmStopping) {
+            setAlarmMuted(false)
+        }
+
+        super.onPause()
     }
 
     private fun prepareAlarmWindow() {
@@ -48,6 +58,8 @@ class AlarmActivity : ComponentActivity() {
     }
 
     private fun stopAlarm() {
+        isAlarmStopping = true
+
         startService(
             AlarmRingingService.createStopIntent(this),
         )
