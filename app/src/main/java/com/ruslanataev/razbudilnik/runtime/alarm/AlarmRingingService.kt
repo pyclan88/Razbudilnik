@@ -8,10 +8,26 @@ import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.IBinder
 import android.os.PowerManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 class AlarmRingingService : Service() {
 
     private var ringtone: Ringtone? = null
+    private var isAlarmMuted: Boolean = false
+
+    private val serviceScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.Main.immediate,
+    )
+
+    private var volumeFadeJob: Job? = null
+    private var currentVolume: Float = MUTED_VOLUME
 
     private var screenWakeLock: PowerManager.WakeLock? = null
 
@@ -22,6 +38,8 @@ class AlarmRingingService : Service() {
                 minute = intent.getIntExtra(EXTRA_MINUTE, 0)
             )
 
+            ACTION_MUTE -> setAlarmMuted(true)
+            ACTION_RESUME -> setAlarmMuted(false)
             ACTION_STOP -> stopAlarm()
             else -> stopSelf()
         }
@@ -32,6 +50,8 @@ class AlarmRingingService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        volumeFadeJob?.cancel()
+        serviceScope.cancel()
         ringtone?.stop()
         ringtone = null
 
@@ -61,18 +81,81 @@ class AlarmRingingService : Service() {
 
         ringtone = RingtoneManager.getRingtone(this, ringtoneUri)?.apply {
             isLooping = true
+
+            volume = MUTED_VOLUME
             play()
         }
+
+        currentVolume = MUTED_VOLUME
+
+        fadeToVolume(
+            targetVolume = if (isAlarmMuted) MUTED_VOLUME else AUDIBLE_VOLUME,
+        )
+    }
+
+    private fun setAlarmMuted(isMuted: Boolean) {
+        if (isAlarmMuted == isMuted) {
+            return
+        }
+
+        isAlarmMuted = isMuted
+
+        fadeToVolume(
+            targetVolume = if (isMuted) MUTED_VOLUME else AUDIBLE_VOLUME,
+        )
     }
 
     private fun stopAlarm() {
+        isAlarmMuted = false
+
+        fadeToVolume(
+            targetVolume = MUTED_VOLUME,
+            onFinished = ::finishStoppingAlarm,
+        )
+    }
+
+    private fun finishStoppingAlarm() {
         ringtone?.stop()
         ringtone = null
+        currentVolume = MUTED_VOLUME
 
         releaseScreenWakeLock()
 
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
+    }
+
+    private fun fadeToVolume(
+        targetVolume: Float,
+        onFinished: () -> Unit = {},
+    ) {
+        volumeFadeJob?.cancel()
+
+        val activeRingtone = ringtone
+
+        if (activeRingtone == null || currentVolume == targetVolume) {
+            currentVolume = targetVolume
+            activeRingtone?.volume = targetVolume
+            onFinished()
+            return
+        }
+
+        val startVolume = currentVolume
+
+        volumeFadeJob = serviceScope.launch {
+            repeat(VOLUME_FADE_STEP_COUNT) { stepIndex ->
+                val progress =
+                    (stepIndex + 1).toFloat() / VOLUME_FADE_STEP_COUNT
+
+                currentVolume = startVolume + (targetVolume - startVolume) * progress
+
+                activeRingtone.volume = currentVolume
+                delay(VOLUME_FADE_DELAY_MILLIS.milliseconds)
+            }
+
+            volumeFadeJob = null
+            onFinished()
+        }
     }
 
     @Suppress("DEPRECATION")
@@ -102,16 +185,32 @@ class AlarmRingingService : Service() {
 
     companion object {
         private const val ACTION_START = "com.ruslanataev.razbudilnik.action.START_ALARM"
+        private const val ACTION_MUTE = "com.ruslanataev.razbudilnik.action.MUTE_ALARM"
+        private const val ACTION_RESUME = "com.ruslanataev.razbudilnik.action.RESUME_ALARM"
         private const val ACTION_STOP = "com.ruslanataev.razbudilnik.action.STOP_ALARM"
         private const val EXTRA_HOUR = "extra_hour"
         private const val EXTRA_MINUTE = "extra_minute"
         private const val SCREEN_WAKE_TIMEOUT_MILLIS = 10_000L
+        private const val MUTED_VOLUME = 0f
+        private const val AUDIBLE_VOLUME = 1f
+        private const val VOLUME_FADE_STEP_COUNT = 20
+        private const val VOLUME_FADE_DELAY_MILLIS = 25L
 
         fun createStartIntent(context: Context, hour: Int, minute: Int) =
             Intent(context, AlarmRingingService::class.java).apply {
                 action = ACTION_START
                 putExtra(EXTRA_HOUR, hour)
                 putExtra(EXTRA_MINUTE, minute)
+            }
+
+        fun createMuteIntent(context: Context) =
+            Intent(context, AlarmRingingService::class.java).apply {
+                action = ACTION_MUTE
+            }
+
+        fun createResumeIntent(context: Context) =
+            Intent(context, AlarmRingingService::class.java).apply {
+                action = ACTION_RESUME
             }
 
         fun createStopIntent(context: Context) =

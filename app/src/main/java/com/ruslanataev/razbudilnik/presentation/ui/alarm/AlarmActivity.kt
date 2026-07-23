@@ -21,6 +21,7 @@ class AlarmActivity : ComponentActivity() {
             RazbudilnikTheme {
                 ReaderRoute(
                     onChallengeFinished = ::stopAlarm,
+                    onAlarmMuteChanged = ::setAlarmMuted,
                 )
             }
         }
@@ -34,6 +35,16 @@ class AlarmActivity : ComponentActivity() {
             WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
                     WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON,
         )
+    }
+
+    private fun setAlarmMuted(isMuted: Boolean) {
+        val intent = if (isMuted) {
+            AlarmRingingService.createMuteIntent(this)
+        } else {
+            AlarmRingingService.createResumeIntent(this)
+        }
+
+        startService(intent)
     }
 
     private fun stopAlarm() {

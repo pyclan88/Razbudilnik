@@ -16,13 +16,25 @@ import com.ruslanataev.razbudilnik.presentation.ui.reader.viewmodel.ReaderViewMo
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.seconds
 
+private val ALARM_RESUME_GRACE_PERIOD = 1.seconds
+
 @Composable
 fun ReaderRoute(
     onChallengeFinished: () -> Unit,
     modifier: Modifier = Modifier,
+    onAlarmMuteChanged: (Boolean) -> Unit = {},
     viewModel: ReaderViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(state.shouldMuteAlarm) {
+        if (state.shouldMuteAlarm) {
+            onAlarmMuteChanged(true)
+        } else {
+            delay(ALARM_RESUME_GRACE_PERIOD)
+            onAlarmMuteChanged(false)
+        }
+    }
 
     val requiredMovementDistancePx = with(LocalDensity.current) { 64.dp.toPx() }
 
