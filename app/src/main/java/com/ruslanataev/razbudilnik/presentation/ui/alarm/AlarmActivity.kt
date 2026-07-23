@@ -3,6 +3,7 @@ package com.ruslanataev.razbudilnik.presentation.ui.alarm
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import com.ruslanataev.razbudilnik.presentation.ui.reader.ReaderRoute
 import com.ruslanataev.razbudilnik.presentation.ui.theme.RazbudilnikTheme
@@ -21,6 +22,10 @@ class AlarmActivity : ComponentActivity() {
 
         setContent {
             RazbudilnikTheme {
+                BackHandler(enabled = true) {
+                    // Only completing the reader challenge may dismiss the alarm.
+                }
+
                 ReaderRoute(
                     onChallengeFinished = ::stopAlarm,
                     onAlarmMuteChanged = ::setAlarmMuted,
