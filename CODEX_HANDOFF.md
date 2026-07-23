@@ -22,7 +22,7 @@ Important rules:
 Project path on this PC:
 
 ```text
-C:\Users\Pyclan\AndroidStudioProjects\Razbudilnik
+C:\Users\Asus\AndroidStudioProjects\Razbudilnik
 ```
 
 Current branch:
@@ -40,27 +40,27 @@ master
 Latest local commits at handoff time:
 
 ```text
+6e6b11f fix: resume alarm when reader loses focus
+543c760 feat: mute alarm during valid reader interaction
+798981d docs: update reader handoff
 5c0658c feat: launch reader challenge from alarm
 22cdbd7 test: cover reader view model navigation
 dcdfba2 docs: require full file addresses in code suggestions
 030c558 feat: handle reader challenge completion
 4da2669 feat: show reader challenge completion action
-ceb6d64 chore: remove unused reader initial state
-4006d15 feat: allow reader back navigation
-b50105e docs: clarify code edit suggestion format
 ```
 
-Before moving PCs, the user should normally run:
+Before moving to another PC, the user should normally run:
 
 ```powershell
 .\gradlew.bat testDebugUnitTest assembleDebug
 git status
 git add CODEX_HANDOFF.md
-git commit -m "docs: update reader handoff"
+git commit -m "docs: finalize reader MVP handoff"
 git push
 ```
 
-On the Asus laptop:
+On another PC:
 
 ```powershell
 git fetch origin
@@ -174,72 +174,38 @@ Verified by the user:
 - The activity no longer aborts after adding `@AndroidEntryPoint`.
 - Finishing the challenge stops the alarm.
 
-## Current Limitation
+## Alarm Sound Interaction
 
-The reader state is not yet connected to alarm sound muting.
+The reader challenge now controls alarm playback:
 
-Right now:
+1. Alarm sound starts with a smooth fade-in.
+2. Valid finger movement smoothly mutes the sound.
+3. Stopping movement starts a one-second grace period.
+4. If movement resumes during that period, the pending resume is cancelled.
+5. Otherwise, the sound smoothly fades back in.
+6. Leaving `AlarmActivity` restores audible playback.
+7. Finishing the challenge fades out and stops the service.
 
-- `ReaderUiState.shouldMuteAlarm` exists.
-- The domain logic updates it based on finger movement.
-- The UI uses it only as state.
-- `AlarmRingingService` still only supports start and stop.
-- Alarm sound keeps playing during the reader challenge until the challenge is finished.
+`AlarmRingingService` owns its fade coroutine scope and cancels it in `onDestroy()`.
 
-This is the next real feature. The app is dramatically close to the point where it annoys the user
-correctly. Society trembles.
+Verified by the user:
 
-## Next Commit-Step
+- Valid movement mutes the alarm.
+- Stopping movement restores the sound after the grace period.
+- Rapid movement changes reverse the fade smoothly.
+- Leaving the activity restores audible playback.
+- Finishing the challenge stops the service and removes the notification.
 
-Goal:
+## Next Action
 
-```text
-Mute alarm sound while the reader interaction is valid, resume sound when interaction stops.
-```
+PR 8 is feature-complete. Do not add more reader functionality to this branch.
 
-Recommended scope:
+Next steps:
 
-1. Add mute/resume actions to `AlarmRingingService`.
-2. Add an `onAlarmMuteChanged: (Boolean) -> Unit` callback to `ReaderRoute`.
-3. In `ReaderRoute`, call that callback from `LaunchedEffect(state.shouldMuteAlarm)`.
-4. In `AlarmActivity`, send mute/resume intents to `AlarmRingingService`.
-
-Suggested affected files:
-
--
-`C:\Users\Pyclan\AndroidStudioProjects\Razbudilnik\app\src\main\java\com\ruslanataev\razbudilnik\runtime\alarm\AlarmRingingService.kt`
--
-`C:\Users\Pyclan\AndroidStudioProjects\Razbudilnik\app\src\main\java\com\ruslanataev\razbudilnik\presentation\ui\reader\ReaderRoute.kt`
--
-`C:\Users\Pyclan\AndroidStudioProjects\Razbudilnik\app\src\main\java\com\ruslanataev\razbudilnik\presentation\ui\alarm\AlarmActivity.kt`
-
-Expected behavior after the next step:
-
-- Alarm starts with sound.
-- If the user presses and moves enough on the reader screen, the sound stops.
-- If the user stops moving or lifts the finger, the sound resumes.
-- The foreground notification stays alive while muted.
-- Finishing the reader challenge still stops the service and removes the notification.
-
-Suggested test:
-
-1. Set an alarm one minute ahead.
-2. Let it ring and open the reader.
-3. Keep finger down and move meaningfully: sound should stop.
-4. Stop moving while keeping finger down: sound should resume within about one second.
-5. Lift finger: sound should resume.
-6. Complete the reader challenge: service stops, activity closes, notification is removed.
-7. Run:
-
-```powershell
-.\gradlew.bat testDebugUnitTest assembleDebug
-```
-
-Suggested commit message after that step:
-
-```text
-feat: mute alarm during valid reader interaction
-```
+1. Review the complete branch against `master`.
+2. Prepare PR 8.
+3. Merge after checks pass.
+4. Plan challenge-navigation hardening in a new numbered branch.
 
 ## Known Product Gaps
 
@@ -249,7 +215,6 @@ feat: mute alarm during valid reader interaction
 - Reading content is hardcoded static text.
 - Required reading time is temporarily `10.seconds` for smoke tests.
 - Movement uses finger motion on screen, not physical walking.
-- Alarm sound muting is the next step, not done yet.
 - Reader UI is intentionally bare MVP.
 - Snooze is not implemented.
 - Notification still uses `android.R.drawable.ic_lock_idle_alarm` instead of an app-owned icon.
