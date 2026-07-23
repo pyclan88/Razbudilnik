@@ -28,7 +28,6 @@ fun SetupScreen(
     state: SetupUiState,
     onTimeSelected: (hour: Int, minute: Int) -> Unit,
     onEnabledChange: (Boolean) -> Unit,
-    onOpenReaderClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var isTimePickerVisible by remember { mutableStateOf(false) }
@@ -65,12 +64,6 @@ fun SetupScreen(
             checked = state.enabled,
             onCheckedChange = onEnabledChange,
         )
-
-        // Added:
-        // Temporary MVP entry point until the reader challenge is launched from the alarm flow.
-        Button(onClick = onOpenReaderClick) {
-            Text("Open reader")
-        }
     }
 }
 
@@ -121,6 +114,5 @@ private fun SetupScreenPreview() {
         state = SetupUiState.initial(),
         onTimeSelected = { _, _ -> },
         onEnabledChange = {},
-        onOpenReaderClick = {},
     )
 }
