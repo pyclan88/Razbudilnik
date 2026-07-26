@@ -4,6 +4,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.media.AudioAttributes
 import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.IBinder
@@ -28,6 +29,9 @@ class AlarmRingingService : Service() {
     )
 
     private var volumeFadeJob: Job? = null
+
+    private var volumeProtectionJob: Job? = null
+
     private var currentVolume: Float = MUTED_VOLUME
 
     private var screenWakeLock: PowerManager.WakeLock? = null
@@ -60,19 +64,19 @@ class AlarmRingingService : Service() {
 
     override fun onDestroy() {
         volumeFadeJob?.cancel()
+
+        stopVolumeProtection()
+
         serviceScope.cancel()
         ringtone?.stop()
         ringtone = null
 
-        alarmVolumeController.stopProtection()
-
         releaseScreenWakeLock()
-
         super.onDestroy()
     }
 
     private fun startAlarm(hour: Int, minute: Int) {
-        alarmVolumeController.startProtection()
+        startVolumeProtection()
 
         wakeScreenIfNecessary()
 
@@ -93,6 +97,11 @@ class AlarmRingingService : Service() {
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
 
         ringtone = RingtoneManager.getRingtone(this, ringtoneUri)?.apply {
+            audioAttributes = AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
+
             isLooping = true
 
             volume = MUTED_VOLUME
@@ -135,8 +144,6 @@ class AlarmRingingService : Service() {
         ringtone?.stop()
         ringtone = null
         currentVolume = MUTED_VOLUME
-
-        alarmVolumeController.stopProtection()
 
         releaseScreenWakeLock()
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -201,6 +208,28 @@ class AlarmRingingService : Service() {
         screenWakeLock = null
     }
 
+    private fun startVolumeProtection() {
+        alarmVolumeController.startProtection()
+
+        if (volumeProtectionJob?.isActive == true) {
+            return
+        }
+
+        volumeProtectionJob = serviceScope.launch {
+            while (true) {
+                delay(VOLUME_PROTECTION_CHECK_INTERVAL_MILLIS.milliseconds)
+                alarmVolumeController.enforceProtectedVolume()
+            }
+        }
+    }
+
+    private fun stopVolumeProtection() {
+        volumeProtectionJob?.cancel()
+        volumeProtectionJob = null
+
+        alarmVolumeController.stopProtection()
+    }
+
     companion object {
         private const val ACTION_START = "com.ruslanataev.razbudilnik.action.START_ALARM"
         private const val ACTION_MUTE = "com.ruslanataev.razbudilnik.action.MUTE_ALARM"
@@ -213,6 +242,7 @@ class AlarmRingingService : Service() {
         private const val AUDIBLE_VOLUME = 1f
         private const val VOLUME_FADE_STEP_COUNT = 20
         private const val VOLUME_FADE_DELAY_MILLIS = 25L
+        private const val VOLUME_PROTECTION_CHECK_INTERVAL_MILLIS = 250L
 
         fun createStartIntent(context: Context, hour: Int, minute: Int) =
             Intent(context, AlarmRingingService::class.java).apply {
