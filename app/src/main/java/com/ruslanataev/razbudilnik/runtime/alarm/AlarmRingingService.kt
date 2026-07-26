@@ -8,6 +8,7 @@ import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.IBinder
 import android.os.PowerManager
+import com.ruslanataev.razbudilnik.runtime.alarm.volume.AlarmVolumeController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -30,6 +31,14 @@ class AlarmRingingService : Service() {
     private var currentVolume: Float = MUTED_VOLUME
 
     private var screenWakeLock: PowerManager.WakeLock? = null
+
+    private lateinit var alarmVolumeController: AlarmVolumeController
+
+    override fun onCreate() {
+        super.onCreate()
+
+        alarmVolumeController = AlarmVolumeController(this)
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
@@ -55,12 +64,16 @@ class AlarmRingingService : Service() {
         ringtone?.stop()
         ringtone = null
 
+        alarmVolumeController.stopProtection()
+
         releaseScreenWakeLock()
 
         super.onDestroy()
     }
 
     private fun startAlarm(hour: Int, minute: Int) {
+        alarmVolumeController.startProtection()
+
         wakeScreenIfNecessary()
 
         val notification = AlarmNotificationHelper(this).createAlarmNotification(hour, minute)
@@ -94,6 +107,10 @@ class AlarmRingingService : Service() {
     }
 
     private fun setAlarmMuted(isMuted: Boolean) {
+        if (!isMuted) {
+            alarmVolumeController.enforceProtectedVolume()
+        }
+
         if (isAlarmMuted == isMuted) {
             return
         }
@@ -119,8 +136,9 @@ class AlarmRingingService : Service() {
         ringtone = null
         currentVolume = MUTED_VOLUME
 
-        releaseScreenWakeLock()
+        alarmVolumeController.stopProtection()
 
+        releaseScreenWakeLock()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }

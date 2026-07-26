@@ -27,7 +27,7 @@ class AlarmVolumeController(
         }
 
         val minimumProtectedVolume = ceil(
-            maximumVolume * MINIMUM_ALARM_VOLUME_RATION,
+            maximumVolume * MINIMUM_ALARM_VOLUME_RATIO,
         ).toInt()
 
         protectedAlarmVolume = maxOf(
@@ -72,6 +72,6 @@ class AlarmVolumeController(
     }
 
     private companion object {
-        private const val MINIMUM_ALARM_VOLUME_RATION = 0.7
+        private const val MINIMUM_ALARM_VOLUME_RATIO = 0.7
     }
 }
