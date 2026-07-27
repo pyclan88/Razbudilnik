@@ -40,30 +40,24 @@ master
 Latest commits at handoff time:
 
 ```text
+9b995fc fix: restore alarm volume after process death
+e650026 feat: enforce protected volume while alarm rings
+4ec5a63 feat: apply volume protection while alarm rings
+e8851b0 feat: add alarm volume protection controller
+4ccdfd1 feat: block alarm silencing hardware keys
 020c854 9. Harden alarm challenge navigation (#9)
 61c10bc 8. Add reader challenge alarm flow (#8)
 ef22d9a 7. Restore enabled alarms during Direct Boot (#7)
-3726747 6. Reschedule alarm after it rings (#6)
-b93aae4 5. Restore enabled alarm after reboot (#5)
-e1d5698 Add reliable background and lock-screen alarm delivery (#4)
 ```
 
-Current uncommitted commit-step at handoff time:
+Current status:
 
 ```text
-AlarmActivity consumes Volume Down and Volume Mute key-down/key-up events while the alarm challenge
-is in the foreground.
+PR 10 implementation and device testing are complete.
+The handoff update is the final documentation commit-step before pushing and opening the PR.
 ```
 
-The user said they will commit and push this step before continuing on the desktop.
-
-On the desktop:
-
-```powershell
-git fetch origin
-git switch 10-alarm-volume-protection
-git pull
-```
+Run `git status` for the exact working-tree and remote state.
 
 ## Android Configuration
 
@@ -107,7 +101,7 @@ PR 9 hardened challenge navigation:
 The user verified Back, Home/return, lock/unlock, challenge completion, sound, and notification
 cleanup on the physical Android 14 device. `testDebugUnitTest` and `assembleDebug` also passed.
 
-## Current PR 10 Goal
+## PR 10 Status
 
 Branch:
 
@@ -122,17 +116,18 @@ Proposed PR title:
 ```
 
 Goal: prevent a ringing alarm from being silenced by lowering or muting the alarm volume, while
-restoring the user's original alarm-stream volume after successful challenge completion.
+restoring the user's original alarm-stream volume after successful challenge completion or the next
+process start.
 
-Planned logical commit-steps:
+Completed logical commit-steps:
 
 1. Consume Volume Down and Volume Mute hardware events in foreground `AlarmActivity`.
 2. Add a runtime `AlarmVolumeController` that captures, enforces, and restores
    `AudioManager.STREAM_ALARM`.
 3. Integrate the controller with `AlarmRingingService`.
 4. Detect and reverse external alarm-volume reductions while the service is active.
-5. Test hardware buttons, system volume controls, Home/return, reading mute/resume, normal
-   completion, and service destruction.
+5. Persist the original alarm volume in device-protected preferences.
+6. Restore a stale original volume from `App.onCreate()` after process death.
 
 Important platform conclusions:
 
@@ -146,7 +141,7 @@ Important platform conclusions:
   group. Use public `onKeyDown()` and `onKeyUp()` callbacks instead.
 - Volume Up remains available.
 
-Current `AlarmActivity` change uses:
+`AlarmActivity` uses:
 
 ```text
 onKeyDown() / onKeyUp()
@@ -154,8 +149,39 @@ KEYCODE_VOLUME_DOWN
 KEYCODE_VOLUME_MUTE
 ```
 
-The first step protects only the foreground activity. The service-side controller is the next
-implementation step.
+`AlarmRingingService` also polls the alarm stream every 250 milliseconds and restores the protected
+volume if it was lowered through system UI while the service is active.
+
+The user verified on the physical Android 14 Tecno device:
+
+- Volume Down and Volume Mute do not silence the alarm while `AlarmActivity` is visible.
+- Lowering the alarm stream through the system volume panel is reversed.
+- Pressing Home does not stop the ringing service or its volume protection.
+- The ongoing alarm notification cannot be dismissed.
+- Tapping the notification returns to the reader with its progress preserved.
+- Completing the challenge stops the alarm and restores the original alarm volume.
+- Killing the process leaves the protected volume in place, but reopening the app restores the
+  saved original volume.
+- Reopening the app after normal completion does not overwrite a later manual volume change.
+- All tests for the final commit-step passed.
+
+## Tecno Process-Kill Finding
+
+On the Tecno device, swiping the app card from Recents while the challenge is active kills the
+activity, foreground service, notification, and alarm sound.
+
+Investigated approaches that did not solve this OEM behavior:
+
+- `singleTask`, a separate task affinity, and `stopWithTask=false`
+- `Service.onTaskRemoved()`
+- running the ringing service in a private application process
+
+After the swipe, `dumpsys package` reported `stopped=false`. The package was process-killed, not
+force-stopped, so AlarmManager is still allowed to wake it later.
+
+The realistic consumer-Android solution is automatic recovery, not making the process impossible to
+kill. Device Owner / kiosk deployment could impose stronger restrictions, but it is intended for
+fully managed dedicated devices and is not appropriate for this consumer alarm app.
 
 ## Implemented Reader Architecture
 
@@ -260,12 +286,23 @@ Verified by the user:
 
 ## Next Action
 
-1. On the desktop, fetch and switch to `10-alarm-volume-protection`.
-2. Confirm the Volume Down/Mute commit is present and the working tree is clean.
-3. Review and device-test the foreground hardware-key interception.
-4. Start commit-step 2: design and add the runtime `AlarmVolumeController`.
-5. Do not add Wake Up Check, QR/barcode missions, backup alarms, or other anti-oversleep features
-   to PR 10.
+1. Review and commit this handoff update as `docs: finalize alarm volume protection handoff`.
+2. Push `10-alarm-volume-protection`.
+3. Open PR `10. Protect active alarm volume`.
+4. Merge PR 10 after its checks pass.
+5. Create `11-alarm-kill-recovery`.
+
+Planned scope for PR 11:
+
+1. Add a distinct AlarmManager watchdog with its own PendingIntent identity and request code.
+2. While the ringing service is healthy, keep postponing the watchdog trigger.
+3. Cancel the watchdog after successful challenge completion.
+4. If the OEM kills the process, let the watchdog restart the alarm runtime and challenge.
+5. Verify recovery after a Recents swipe and verify that normal completion does not restart the
+   alarm.
+
+Do not add Wake Up Check, QR/barcode missions, backup alarms, or other unrelated anti-oversleep
+features to PR 11.
 
 ## Known Product Gaps
 
