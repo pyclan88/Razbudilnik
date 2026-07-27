@@ -2,16 +2,25 @@ package com.ruslanataev.razbudilnik.runtime.alarm.volume
 
 import android.content.Context
 import android.media.AudioManager
+import androidx.core.content.edit
 import kotlin.math.ceil
 
 class AlarmVolumeController(
     context: Context,
 ) {
 
-    private val audioManager: AudioManager =
-        context.applicationContext.getSystemService(AudioManager::class.java)
+    private val applicationContext = context.applicationContext
 
-    private var originalAlarmVolume: Int? = null
+    private val audioManager: AudioManager =
+        applicationContext.getSystemService(AudioManager::class.java)
+
+    private val preferences = applicationContext
+        .createDeviceProtectedStorageContext()
+        .getSharedPreferences(
+            PREFERENCES_NAME,
+            Context.MODE_PRIVATE,
+        )
+
     private var protectedAlarmVolume: Int? = null
 
     fun startProtection() {
@@ -22,8 +31,10 @@ class AlarmVolumeController(
         val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_ALARM)
         val maximumVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
 
-        if (originalAlarmVolume == null) {
-            originalAlarmVolume = currentVolume
+        if (!preferences.contains(KEY_ORIGINAL_ALARM_VOLUME)) {
+            preferences.edit(commit = true) {
+                putInt(KEY_ORIGINAL_ALARM_VOLUME, currentVolume)
+            }
         }
 
         val minimumProtectedVolume = ceil(
@@ -32,7 +43,7 @@ class AlarmVolumeController(
 
         protectedAlarmVolume = maxOf(
             currentVolume,
-            minimumProtectedVolume
+            minimumProtectedVolume,
         )
 
         enforceProtectedVolume()
@@ -57,21 +68,37 @@ class AlarmVolumeController(
     }
 
     fun stopProtection() {
-        val volumeToRestore = originalAlarmVolume ?: return
+        restoreOriginalVolumeIfNeeded()
+        protectedAlarmVolume = null
+    }
 
-        if (!audioManager.isVolumeFixed) {
+    fun restoreOriginalVolumeIfNeeded() {
+        if (!preferences.contains(KEY_ORIGINAL_ALARM_VOLUME)) {
+            return
+        }
+
+        val originalVolume = preferences.getInt(
+            KEY_ORIGINAL_ALARM_VOLUME,
+            VOLUME_NOT_STORED,
+        )
+
+        if (!audioManager.isVolumeFixed && originalVolume != VOLUME_NOT_STORED) {
             audioManager.setStreamVolume(
                 AudioManager.STREAM_ALARM,
-                volumeToRestore,
+                originalVolume,
                 0,
             )
         }
 
-        originalAlarmVolume = null
-        protectedAlarmVolume = null
+        preferences.edit(commit = true) {
+            remove(KEY_ORIGINAL_ALARM_VOLUME)
+        }
     }
 
     private companion object {
+        private const val PREFERENCES_NAME = "alarm_volume_protection"
+        private const val KEY_ORIGINAL_ALARM_VOLUME = "original_alarm_volume"
+        private const val VOLUME_NOT_STORED = -1
         private const val MINIMUM_ALARM_VOLUME_RATIO = 0.7
     }
 }
