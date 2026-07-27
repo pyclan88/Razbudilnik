@@ -1,6 +1,7 @@
 package com.ruslanataev.razbudilnik.presentation.ui.alarm
 
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -40,6 +41,27 @@ class AlarmActivity : ComponentActivity() {
         }
 
         super.onPause()
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        return if (keyCode.isAlarmSilencingKey()) {
+            true
+        } else {
+            super.onKeyDown(keyCode, event)
+        }
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        return if (keyCode.isAlarmSilencingKey()) {
+            true
+        } else {
+            super.onKeyUp(keyCode, event)
+        }
+    }
+
+    private fun Int.isAlarmSilencingKey(): Boolean {
+        return this == KeyEvent.KEYCODE_VOLUME_DOWN ||
+                this == KeyEvent.KEYCODE_VOLUME_MUTE
     }
 
     private fun prepareAlarmWindow() {
