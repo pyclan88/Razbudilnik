@@ -203,6 +203,10 @@ hellgate
     exact code and commands in the chat so I can apply and run them. Only perform an action for me
     as a last resort when I explicitly ask you to do that action and say `hellgate`.
 
+15. Do not inspect, review, or report the Git staging state during normal code reviews. The user
+    manages staging independently. Check the staging area only when the user explicitly asks about
+    staged changes or a staging-related problem.
+
 ---
 
 ## 7. Code output rules
