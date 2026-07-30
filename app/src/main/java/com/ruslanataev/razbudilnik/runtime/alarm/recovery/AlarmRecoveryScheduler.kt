@@ -63,7 +63,7 @@ class AlarmRecoveryScheduler(
     }
 
     private companion object {
-        const val RECOVERY_TIMEOUT_MILLIS = 15_000L
+        const val RECOVERY_TIMEOUT_MILLIS = 5_000L
 
         const val REQUEST_CODE_ALARM_RECOVERY = 3001
     }
