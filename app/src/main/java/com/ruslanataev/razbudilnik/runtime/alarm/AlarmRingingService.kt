@@ -10,6 +10,7 @@ import android.media.RingtoneManager
 import android.os.IBinder
 import android.os.PowerManager
 import com.ruslanataev.razbudilnik.runtime.alarm.recovery.AlarmRecoveryScheduler
+import com.ruslanataev.razbudilnik.runtime.alarm.session.AlarmSessionStore
 import com.ruslanataev.razbudilnik.runtime.alarm.volume.AlarmVolumeController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,12 +41,14 @@ class AlarmRingingService : Service() {
 
     private lateinit var alarmVolumeController: AlarmVolumeController
     private lateinit var alarmRecoveryScheduler: AlarmRecoveryScheduler
+    private lateinit var alarmSessionStore: AlarmSessionStore
 
     override fun onCreate() {
         super.onCreate()
 
         alarmVolumeController = AlarmVolumeController(this)
         alarmRecoveryScheduler = AlarmRecoveryScheduler(this)
+        alarmSessionStore = AlarmSessionStore(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -90,6 +93,11 @@ class AlarmRingingService : Service() {
             AlarmNotificationHelper.NOTIFICATION_ID_ALARM,
             notification,
             ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+        )
+
+        alarmSessionStore.saveActiveSession(
+            hour = hour,
+            minute = minute,
         )
 
         startRecoveryWatchdog(hour, minute)
@@ -139,6 +147,8 @@ class AlarmRingingService : Service() {
 
     private fun stopAlarm() {
         stopRecoveryWatchdog()
+
+        alarmSessionStore.clearActiveSession()
 
         isAlarmMuted = false
 
