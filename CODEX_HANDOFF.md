@@ -11,6 +11,7 @@ Important rules:
 - Do not modify anything unless the user explicitly requests that action and says `hellgate`.
 - The user performs code changes, builds, tests, and Git operations by default.
 - Treat Git as read-only unless the user explicitly requests a particular Git mutation.
+- Do not inspect or report the Git staging state unless the user explicitly asks about it.
 - Always show concrete code suggestions with exact full file paths.
 - Teach new code at the concept, runtime-flow, and method/API/syntax levels.
 - Put teaching comments above unfamiliar code.
@@ -43,6 +44,8 @@ master
 Latest commits before this handoff edit:
 
 ```text
+039a87b fix: return to active reader from launcher
+70cdd08 docs: finalize alarm kill recovery handoff
 bd8fde2 feat: maintain recovery watchdog while alarm rings
 dae3909 feat: alarm recovery watchdog infrastructure
 35bdef4 docs: add code learning protocol
@@ -56,8 +59,8 @@ ef22d9a 7. Restore enabled alarms during Direct Boot (#7)
 Current status:
 
 ```text
-PR 11 implementation, automated checks, and physical-device testing are complete.
-This handoff update is the final documentation commit-step before pushing and opening the PR.
+PR 11 implementation, final branch review, automated checks, and physical-device testing are
+complete. The branch is ready to push and open as a pull request.
 ```
 
 Run `git status` for the exact working-tree and remote state.
@@ -193,11 +196,17 @@ New runtime files:
 
 - `app/src/main/java/com/ruslanataev/razbudilnik/runtime/alarm/recovery/AlarmRecoveryReceiver.kt`
 - `app/src/main/java/com/ruslanataev/razbudilnik/runtime/alarm/recovery/AlarmRecoveryScheduler.kt`
+- `app/src/main/java/com/ruslanataev/razbudilnik/runtime/alarm/session/ActiveAlarmSession.kt`
+- `app/src/main/java/com/ruslanataev/razbudilnik/runtime/alarm/session/AlarmSessionStore.kt`
 
 Edited runtime files:
 
 - `app/src/main/java/com/ruslanataev/razbudilnik/runtime/alarm/AlarmRingingService.kt`
 - `app/src/main/AndroidManifest.xml`
+
+Edited presentation entry point:
+
+- `app/src/main/java/com/ruslanataev/razbudilnik/presentation/ui/MainActivity.kt`
 
 The watchdog uses:
 
@@ -230,6 +239,19 @@ Runtime flow:
 8. The service recreates alarm audio, notification, and the full-screen reader flow.
 9. Normal challenge completion calls `stopRecoveryWatchdog()` before the service fades out.
 
+Active-session launcher flow:
+
+1. `AlarmRingingService` synchronously saves the active alarm hour and minute in dedicated
+   device-protected `SharedPreferences`.
+2. Normal challenge completion clears the active session before the service stops.
+3. Unexpected process death intentionally leaves the active session stored.
+4. `MainActivity.onCreate()` and `onResume()` check the stored session before showing setup.
+5. When a session exists, `MainActivity` starts `AlarmRingingService` with the saved alarm time.
+6. It opens `AlarmActivity` with `FLAG_ACTIVITY_CLEAR_TOP`, reusing the existing reader when that
+   activity is still alive.
+7. It finishes `MainActivity`, preventing the setup screen from becoming an escape from an active
+   reader challenge.
+
 `AlarmRingingService` intentionally returns `START_NOT_STICKY`. Android does not generically restart
 the service with a potentially null Intent; the watchdog performs a controlled restart with the
 correct action and alarm time.
@@ -255,11 +277,17 @@ Physical Android 14 Tecno verification:
 - Alarm sound, foreground notification, and reader flow returned.
 - Normal challenge completion cancelled the watchdog.
 - Waiting after normal completion did not restart the alarm.
+- Opening Razbudilnik from its launcher icon during an active challenge returned to the existing
+  reader with its current in-memory progress.
+- After normal challenge completion, opening the launcher icon showed setup and did not restart the
+  alarm.
 
 ### PR 11 Limitations
 
 - Explicit Android Force stop cancels alarms and prevents background starts until the user launches
-  the application again. This cannot be bypassed by a normal consumer application.
+  the application again. On the next manual launch, the stored active session restores the reader
+  and alarm runtime. The stopped-state restriction itself cannot be bypassed by a normal consumer
+  application.
 - Powering the device off cannot be prevented.
 - Reader progress currently lives in `ReaderViewModel` memory and restarts from the beginning after
   process death.
@@ -287,12 +315,7 @@ Confirmed concepts currently include:
 
 ## Next Action
 
-1. Review and commit this handoff update:
-
-   ```text
-   docs: finalize alarm kill recovery handoff
-   ```
-
+1. Commit this final handoff update if it is not included with the existing documentation change.
 2. Push `11-alarm-kill-recovery`.
 3. Open PR:
 
