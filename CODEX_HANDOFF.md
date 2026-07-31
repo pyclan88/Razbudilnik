@@ -23,16 +23,16 @@ Important rules:
 
 ## Repository State
 
-Project path on this PC:
+Project path on the current PC:
 
 ```text
-C:\Users\Pyclan\AndroidStudioProjects\Razbudilnik
+C:\Users\Asus\AndroidStudioProjects\Razbudilnik
 ```
 
 Current branch:
 
 ```text
-11-alarm-kill-recovery
+12-bundled-book-content
 ```
 
 Base branch:
@@ -44,23 +44,25 @@ master
 Latest commits before this handoff edit:
 
 ```text
-039a87b fix: return to active reader from launcher
-70cdd08 docs: finalize alarm kill recovery handoff
-bd8fde2 feat: maintain recovery watchdog while alarm rings
-dae3909 feat: alarm recovery watchdog infrastructure
-35bdef4 docs: add code learning protocol
+9e87076 feat: add stable reader content models
+d58896b 11. Recover an active alarm after process death (#11)
 71b2773 10. Protect active alarm volume (#10)
 020c854 9. Harden alarm challenge navigation (#9)
 61c10bc 8. Add reader challenge alarm flow (#8)
-ef22d9a 7. Restore enabled alarms during Direct Boot (#7)
-3726747 6. Reschedule alarm after it rings (#6)
 ```
 
 Current status:
 
 ```text
-PR 11 implementation, final branch review, automated checks, and physical-device testing are
-complete. The branch is ready to push and open as a pull request.
+PR 11 is merged.
+
+PR 12 commit-step 1 is committed.
+
+PR 12 commit-step 2 is implemented but not yet committed. It adds the domain reader-book repository
+contract, data DTOs, DTO-to-domain mappers, and a mapper unit test.
+
+The code review found no functional or architectural blocker. Two trailing-comma style fixes remain,
+and the user has not yet reported the automated test result for commit-step 2.
 ```
 
 Run `git status` for the exact working-tree and remote state.
@@ -150,7 +152,7 @@ PR 10 protects active alarm volume:
 The physical Tecno device tests passed for hardware keys, system volume UI, Home/return,
 notification behavior, challenge completion, process death, and original-volume restoration.
 
-## PR 11 Status
+## Completed PR 11
 
 Branch:
 
@@ -313,24 +315,7 @@ Confirmed concepts currently include:
 - Android, not `AlarmActivity`, calls `AlarmRingingService.onStartCommand()` after a service-start
   request.
 
-## Next Action
-
-1. Commit this final handoff update if it is not included with the existing documentation change.
-2. Push `11-alarm-kill-recovery`.
-3. Open PR:
-
-   ```text
-   11. Recover active alarm after process death
-   ```
-
-4. Merge PR 11 after its checks pass.
-5. Create:
-
-   ```text
-   12-bundled-book-content
-   ```
-
-## Planned PR 12
+## PR 12 Status
 
 Proposed PR title:
 
@@ -338,8 +323,18 @@ Proposed PR title:
 12. Add bundled public-domain reading content
 ```
 
-Goal: replace the three hardcoded paragraphs with one real bundled public-domain book or story and
-introduce stable content identity before reading-progress persistence.
+Goal: replace the three hardcoded paragraphs with Leo Tolstoy's Russian-language short story
+`Кавказский пленник` and introduce stable content identity before reading-progress persistence.
+
+The original Russian story is in the public domain. The selected reference is the 1908 edition from
+the National Electronic Library:
+
+```text
+https://rusneb.ru/catalog/000199_000009_003753640/
+```
+
+Use only the original story text. Do not bundle modern commentary, cover art, illustrations,
+adaptations, or editorial additions with separate rights.
 
 Reason for this order:
 
@@ -347,15 +342,84 @@ Reason for this order:
 - Persisting those indexes now would create disposable storage code.
 - Stable book and page IDs should exist before progress is saved.
 
-Planned scope:
+### Completed Commit-Step 1
 
-1. Add a book model with stable `id`, `title`, `author`, and pages.
-2. Add stable page IDs.
-3. Add a domain repository abstraction for obtaining reader content.
-4. Add a data implementation that reads one bundled public-domain text from app assets.
-5. Wire the existing reader challenge to the bundled content.
-6. Preserve the current movement, timer, alarm, and navigation behavior.
-7. Add focused domain/ViewModel tests.
+Commit:
+
+```text
+9e87076 feat: add stable reader content models
+```
+
+Implemented:
+
+- `ReaderBook` with stable `id`, title, author, and all book pages.
+- Stable `ReaderPage.id`.
+- `ReaderChallenge.firstPageIndex`.
+- `ReaderChallenge.requiredPageCount`.
+- `ReaderChallenge.pages`, which selects at most N consecutive pages using `drop()` and `take()`.
+- The default requested challenge size is five pages.
+- Presentation and `ReaderViewModel` use `challenge.pages`, not every page in the book.
+- Unit tests cover selecting five pages and reaching the end of a book.
+
+Important model distinction:
+
+- `ReaderBook.pages` contains the complete book.
+- `ReaderChallenge.pages` contains only the N pages selected for the current alarm.
+- `currentPageIndex` is relative to the selected challenge pages.
+- Future persisted progress should identify a page with both `bookId` and `pageId`.
+
+### Current Commit-Step 2
+
+New files:
+
+- `app/src/main/java/com/ruslanataev/razbudilnik/domain/reader/api/ReaderBookRepository.kt`
+- `app/src/main/java/com/ruslanataev/razbudilnik/data/reader/models/ReaderBookDto.kt`
+- `app/src/main/java/com/ruslanataev/razbudilnik/data/reader/models/ReaderPageDto.kt`
+-
+`app/src/main/java/com/ruslanataev/razbudilnik/data/reader/mappers/ReaderBookDtoToReaderBookMapper.kt`
+-
+`app/src/main/java/com/ruslanataev/razbudilnik/data/reader/mappers/ReaderPageDtoToReaderPageMapper.kt`
+-
+`app/src/test/java/com/ruslanataev/razbudilnik/data/reader/mappers/ReaderBookDtoToReaderBookMapperTest.kt`
+
+The domain contract is:
+
+```kotlin
+interface ReaderBookRepository {
+    suspend fun getBook(bookId: String): ReaderBook
+}
+```
+
+`suspend` allows the future asset implementation to perform asynchronous work. It does not switch
+to an IO thread automatically; `ReaderBookRepositoryImpl` must explicitly use an IO dispatcher.
+
+Before committing this step:
+
+1. Add a trailing comma after `ReaderPageDtoToReaderPageMapper::map` in
+   `ReaderBookDtoToReaderBookMapper`.
+2. Add a trailing comma after `actual` in `ReaderBookDtoToReaderBookMapperTest`.
+3. Run:
+
+   ```powershell
+   .\gradlew.bat testDebugUnitTest assembleDebug
+   ```
+
+4. Commit as:
+
+   ```text
+   feat: add reader book data contract
+   ```
+
+### Remaining PR 12 Scope
+
+1. Add the bundled `Кавказский пленник` asset and source metadata.
+2. Implement `ReaderBookRepositoryImpl` using `AssetManager` on an IO dispatcher.
+3. Add Hilt binding in a reader DI module.
+4. Make `GetReaderChallengeUseCase` load the default book through `ReaderBookRepository`.
+5. Update `ReaderViewModel` for suspend book loading without blocking the main thread.
+6. Remove the hardcoded English sample paragraphs.
+7. Preserve the current movement, timer, alarm, and navigation behavior.
+8. Add repository and ViewModel tests.
 
 Out of scope for PR 12:
 
@@ -365,6 +429,30 @@ Out of scope for PR 12:
 - book-selection UI
 - reading-progress persistence
 - reader design polish
+
+## Next Action
+
+On the current PC:
+
+1. Apply the two trailing-comma fixes.
+2. Run `testDebugUnitTest` and `assembleDebug`.
+3. Commit commit-step 2 as `feat: add reader book data contract`.
+4. Commit this handoff update separately if desired.
+5. Push `12-bundled-book-content`.
+
+On the other PC:
+
+```powershell
+git fetch origin
+git switch 12-bundled-book-content
+git pull
+```
+
+Then review `AGENT.md` and this handoff before starting the next commit-step:
+
+```text
+Add the bundled Кавказский пленник asset and ReaderBookRepositoryImpl.
+```
 
 Likely sequence after PR 12:
 
