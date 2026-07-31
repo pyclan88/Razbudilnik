@@ -58,6 +58,11 @@
             android:exported="false" />
 
         <receiver
+            android:name=".runtime.alarm.recovery.AlarmRecoveryReceiver"
+            android:directBootAware="true"
+            android:exported="false" />
+
+        <receiver
             android:name=".runtime.alarm.AlarmBootReceiver"
             android:directBootAware="true"
             android:exported="false">

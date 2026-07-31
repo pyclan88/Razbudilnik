@@ -9,6 +9,8 @@ import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.IBinder
 import android.os.PowerManager
+import com.ruslanataev.razbudilnik.runtime.alarm.recovery.AlarmRecoveryScheduler
+import com.ruslanataev.razbudilnik.runtime.alarm.session.AlarmSessionStore
 import com.ruslanataev.razbudilnik.runtime.alarm.volume.AlarmVolumeController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,17 +33,22 @@ class AlarmRingingService : Service() {
     private var volumeFadeJob: Job? = null
 
     private var volumeProtectionJob: Job? = null
+    private var recoveryWatchdogJob: Job? = null
 
     private var currentVolume: Float = MUTED_VOLUME
 
     private var screenWakeLock: PowerManager.WakeLock? = null
 
     private lateinit var alarmVolumeController: AlarmVolumeController
+    private lateinit var alarmRecoveryScheduler: AlarmRecoveryScheduler
+    private lateinit var alarmSessionStore: AlarmSessionStore
 
     override fun onCreate() {
         super.onCreate()
 
         alarmVolumeController = AlarmVolumeController(this)
+        alarmRecoveryScheduler = AlarmRecoveryScheduler(this)
+        alarmSessionStore = AlarmSessionStore(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -88,6 +95,13 @@ class AlarmRingingService : Service() {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
         )
 
+        alarmSessionStore.saveActiveSession(
+            hour = hour,
+            minute = minute,
+        )
+
+        startRecoveryWatchdog(hour, minute)
+
         if (ringtone?.isPlaying == true) {
             return
         }
@@ -132,6 +146,10 @@ class AlarmRingingService : Service() {
     }
 
     private fun stopAlarm() {
+        stopRecoveryWatchdog()
+
+        alarmSessionStore.clearActiveSession()
+
         isAlarmMuted = false
 
         fadeToVolume(
@@ -230,6 +248,24 @@ class AlarmRingingService : Service() {
         alarmVolumeController.stopProtection()
     }
 
+    private fun startRecoveryWatchdog(hour: Int, minute: Int) {
+        recoveryWatchdogJob?.cancel()
+        alarmRecoveryScheduler.postponeRecovery(hour, minute)
+
+        recoveryWatchdogJob = serviceScope.launch {
+            while (true) {
+                delay(RECOVERY_WATCHDOG_REFRESH_INTERVAL_MILLIS.milliseconds)
+                alarmRecoveryScheduler.postponeRecovery(hour, minute)
+            }
+        }
+    }
+
+    private fun stopRecoveryWatchdog() {
+        recoveryWatchdogJob?.cancel()
+        recoveryWatchdogJob = null
+        alarmRecoveryScheduler.cancelRecovery()
+    }
+
     companion object {
         private const val ACTION_START = "com.ruslanataev.razbudilnik.action.START_ALARM"
         private const val ACTION_MUTE = "com.ruslanataev.razbudilnik.action.MUTE_ALARM"
@@ -243,6 +279,7 @@ class AlarmRingingService : Service() {
         private const val VOLUME_FADE_STEP_COUNT = 20
         private const val VOLUME_FADE_DELAY_MILLIS = 25L
         private const val VOLUME_PROTECTION_CHECK_INTERVAL_MILLIS = 250L
+        private const val RECOVERY_WATCHDOG_REFRESH_INTERVAL_MILLIS = 2_000L
 
         fun createStartIntent(context: Context, hour: Int, minute: Int) =
             Intent(context, AlarmRingingService::class.java).apply {

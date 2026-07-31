@@ -203,6 +203,10 @@ hellgate
     exact code and commands in the chat so I can apply and run them. Only perform an action for me
     as a last resort when I explicitly ask you to do that action and say `hellgate`.
 
+15. Do not inspect, review, or report the Git staging state during normal code reviews. The user
+    manages staging independently. Check the staging area only when the user explicitly asks about
+    staged changes or a staging-related problem.
+
 ---
 
 ## 7. Code output rules
@@ -335,7 +339,87 @@ hellgate
 
 ---
 
-## 9. MVP assumptions unless I say otherwise
+## 9. Teaching and knowledge tracking
+
+1. Treat implementation as both product development and Android/Kotlin training. A successful
+   build or copied implementation does not prove that I understand the new concepts.
+
+2. Before suggesting code for a commit-step, identify the concepts that are new in that step. Do
+   not repeat explanations for concepts already recorded as understood in the knowledge profile
+   unless I ask for a refresher.
+
+3. Code suggestions must be readable as a guided lesson from top to bottom. Immediately above each
+   newly introduced class, Android API, Kotlin feature, important property, or control-flow block,
+   add a teaching comment that explains:
+
+    * what it is,
+    * who calls it,
+    * when it runs,
+    * why this project needs it.
+
+4. Teaching comments must appear above the relevant code, not beside it. Do not merely label a line
+   as added or edited; explain its purpose in plain English.
+
+5. Teach suggested code at three separate levels:
+
+    * the feature concept and the problem it solves,
+    * the chronological Android runtime flow,
+    * the meaning of the actual code, including methods, properties, parameters, return values,
+      side effects, constants, strings, annotations, flags, and relevant Kotlin syntax.
+
+6. For every newly introduced method, explain directly above it:
+
+    * who calls it,
+    * what each parameter represents,
+    * what it returns,
+    * what state or Android system behavior it changes,
+    * why the project needs that method.
+
+7. Explain non-obvious literal values instead of treating them as decoration. This includes Intent
+   action strings, extra keys, request codes, timeout values, Android flags, permission names, and
+   notification/channel identifiers. Explain why the value has that form and how Android uses it.
+
+8. When unfamiliar Kotlin or Android syntax appears, explain it until the knowledge profile records
+   that I understand it. Examples include `companion object`, `apply`, `or`, `::class.java`,
+   `PendingIntent`, annotations, system-service lookup, and overridden lifecycle callbacks.
+
+9. After every learning-heavy code suggestion, explain the complete runtime flow in chronological
+   order: what triggers the behavior, which component receives it, what state changes, what Android
+   does next, and what failure the code prevents.
+
+10. Do not introduce several unexplained Android platform concepts in one step. Split the work when
+    necessary so each commit-step teaches one coherent mechanism.
+
+11. At the end of each learning-heavy step, ask one or two short checkpoint questions about the new
+    concepts. Use my answers to distinguish between:
+
+* concepts I understand,
+* concepts I partially understand,
+* concepts that still need explanation.
+
+12. Maintain the knowledge profile below when I explicitly authorize its update with `hellgate`.
+    Do not infer that I understand something merely because I wrote the code or the build passed.
+
+### Knowledge profile
+
+Confirmed knowledge:
+
+* An `AlarmManager` schedule is owned by Android and survives the Razbudilnik process being killed.
+* The ringing service must postpone the watchdog before its timeout; after process death, the last
+  scheduled deadline remains and eventually triggers recovery.
+
+Currently learning:
+
+* `PendingIntent` identity and replacement.
+* `BroadcastReceiver` delivery after process death.
+* Intent action strings, extra keys, and Android component addressing.
+* Method-level Kotlin and Android API behavior in the alarm recovery implementation.
+* elapsed realtime compared with wall-clock time.
+* exact-alarm permissions and related lint inspections.
+
+---
+
+## 10. MVP assumptions unless I say otherwise
 
 Use these defaults when the product is not specified:
 
@@ -375,7 +459,7 @@ Use these defaults when the product is not specified:
 
 ---
 
-## 10. Quality bar
+## 11. Quality bar
 
 1. Code should compile.
 
@@ -397,7 +481,7 @@ Use these defaults when the product is not specified:
 
 ---
 
-## 11. What I value
+## 12. What I value
 
 1. Speed.
 

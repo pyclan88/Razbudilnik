@@ -6,12 +6,16 @@ Read `AGENT.md` before doing anything.
 
 Important rules:
 
-- Respond only in English and always correct the user's English first.
+- Respond only in English and always correct the user's English first unless the user explicitly
+  asks for an explanation in another language.
 - Do not modify anything unless the user explicitly requests that action and says `hellgate`.
 - The user performs code changes, builds, tests, and Git operations by default.
 - Treat Git as read-only unless the user explicitly requests a particular Git mutation.
-- Always show concrete code suggestions with exact full file paths and explanatory code comments.
-- Show the complete relevant edited section, not scattered fragments.
+- Do not inspect or report the Git staging state unless the user explicitly asks about it.
+- Always show concrete code suggestions with exact full file paths.
+- Teach new code at the concept, runtime-flow, and method/API/syntax levels.
+- Put teaching comments above unfamiliar code.
+- Use the knowledge profile in `AGENT.md`; do not infer understanding from a successful build.
 - Follow Clean Architecture boundaries.
 - Work in one logical commit-step at a time.
 - End every commit-step with review, testing, a commit message, and the next step.
@@ -22,13 +26,13 @@ Important rules:
 Project path on this PC:
 
 ```text
-C:\Users\Asus\AndroidStudioProjects\Razbudilnik
+C:\Users\Pyclan\AndroidStudioProjects\Razbudilnik
 ```
 
 Current branch:
 
 ```text
-10-alarm-volume-protection
+11-alarm-kill-recovery
 ```
 
 Base branch:
@@ -37,24 +41,26 @@ Base branch:
 master
 ```
 
-Latest commits at handoff time:
+Latest commits before this handoff edit:
 
 ```text
-9b995fc fix: restore alarm volume after process death
-e650026 feat: enforce protected volume while alarm rings
-4ec5a63 feat: apply volume protection while alarm rings
-e8851b0 feat: add alarm volume protection controller
-4ccdfd1 feat: block alarm silencing hardware keys
+039a87b fix: return to active reader from launcher
+70cdd08 docs: finalize alarm kill recovery handoff
+bd8fde2 feat: maintain recovery watchdog while alarm rings
+dae3909 feat: alarm recovery watchdog infrastructure
+35bdef4 docs: add code learning protocol
+71b2773 10. Protect active alarm volume (#10)
 020c854 9. Harden alarm challenge navigation (#9)
 61c10bc 8. Add reader challenge alarm flow (#8)
 ef22d9a 7. Restore enabled alarms during Direct Boot (#7)
+3726747 6. Reschedule alarm after it rings (#6)
 ```
 
 Current status:
 
 ```text
-PR 10 implementation and device testing are complete.
-The handoff update is the final documentation commit-step before pushing and opening the PR.
+PR 11 implementation, final branch review, automated checks, and physical-device testing are
+complete. The branch is ready to push and open as a pull request.
 ```
 
 Run `git status` for the exact working-tree and remote state.
@@ -66,126 +72,50 @@ Run `git status` for the exact working-tree and remote state.
 - `compileSdk = 36.1`
 - Application ID: `com.ruslanataev.razbudilnik.alarm`
 
-The alarm-flavored application ID is intentional. On Tecno Android 14, alarm/background behavior was
-more reliable after the package name clearly identified the app as an alarm app.
+The alarm-flavored application ID is intentional. On the Tecno Android 14 device, alarm and
+background behavior became reliable only after the package identity clearly represented an alarm
+application.
 
-## Completed PR 8
-
-PR 8 builds the first MVP of the reader challenge and connects it to the alarm.
-
-Expected MVP behavior:
-
-1. The reader shows static pages from app code.
-2. Every page has its own reading timer.
-3. Reading time counts only while the finger is down and moving enough.
-4. Slight stationary finger movement must not count as reading.
-5. The user can go back to previous pages.
-6. Going back does not reset completed progress.
-7. The final page shows a finish action after its timer is complete.
-8. When the alarm rings, `AlarmActivity` opens the reader instead of the old stop-only alarm screen.
-9. Finishing the reader challenge stops the alarm.
-
-The temporary manual reader entry was removed in PR 9. The alarm is now the only production reader
-entry point.
-
-## Completed PR 9
-
-PR 9 hardened challenge navigation:
-
-1. `AlarmActivity` consumes Back and predictive-back navigation with Compose `BackHandler`.
-2. Completing the reader challenge is the only in-app dismissal path.
-3. Pressing Home is not blocked because Android reserves system navigation for the user.
-4. Leaving the activity restores audible alarm playback.
-5. The temporary `Open reader` button and its callback chain were removed.
-
-The user verified Back, Home/return, lock/unlock, challenge completion, sound, and notification
-cleanup on the physical Android 14 device. `testDebugUnitTest` and `assembleDebug` also passed.
-
-## PR 10 Status
-
-Branch:
+The ringing service is a `mediaPlayback` foreground service. The manifest declares:
 
 ```text
-10-alarm-volume-protection
+android.permission.FOREGROUND_SERVICE
+android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK
+android:foregroundServiceType="mediaPlayback"
 ```
 
-Proposed PR title:
+`AlarmRingingService.startForeground()` also passes
+`ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK`.
 
-```text
-10. Protect active alarm volume
-```
+## Current Product Behavior
 
-Goal: prevent a ringing alarm from being silenced by lowering or muting the alarm volume, while
-restoring the user's original alarm-stream volume after successful challenge completion or the next
-process start.
+The application currently has one enabled/disabled alarm with a selected time.
 
-Completed logical commit-steps:
+When the alarm fires:
 
-1. Consume Volume Down and Volume Mute hardware events in foreground `AlarmActivity`.
-2. Add a runtime `AlarmVolumeController` that captures, enforces, and restores
-   `AudioManager.STREAM_ALARM`.
-3. Integrate the controller with `AlarmRingingService`.
-4. Detect and reverse external alarm-volume reductions while the service is active.
-5. Persist the original alarm volume in device-protected preferences.
-6. Restore a stale original volume from `App.onCreate()` after process death.
+1. `AlarmReceiver` starts `AlarmRingingService`.
+2. The foreground service creates an ongoing full-screen alarm notification and plays alarm audio.
+3. `AlarmActivity` opens the reader challenge.
+4. Reading time counts only while the finger is pressed and moves far enough.
+5. Valid movement smoothly mutes the alarm.
+6. Stopping movement restores sound after a one-second grace period.
+7. Every page has its own reading timer.
+8. The user may revisit completed pages without repeating their timers.
+9. Completing the final page stops the alarm and removes the notification.
 
-Important platform conclusions:
+The temporary reading requirement remains `10.seconds` per page for smoke testing.
 
-- `Ringtone.volume` is only the ringtone player's local `0f..1f` multiplier. A low system alarm
-  stream can still make `AUDIBLE_VOLUME = 1f` quiet.
-- `AudioManager.STREAM_ALARM` represents the system alarm stream.
-- If PR 10 changes the global alarm stream, it must capture and restore the original value.
-- Foreground key interception alone is insufficient because the user can press Home and change
-  volume through system UI.
-- Do not override `ComponentActivity.dispatchKeyEvent()`: AndroidX restricts it to its library
-  group. Use public `onKeyDown()` and `onKeyUp()` callbacks instead.
-- Volume Up remains available.
+## Implemented Architecture
 
-`AlarmActivity` uses:
+Main layer boundaries:
 
-```text
-onKeyDown() / onKeyUp()
-KEYCODE_VOLUME_DOWN
-KEYCODE_VOLUME_MUTE
-```
+- `domain`: models, repository/scheduler interfaces, and use cases without Android framework logic.
+- `data`: DataStore repositories and the Android alarm scheduler implementation.
+- `presentation`: Compose screens, activities, UI state, mappers, and ViewModels.
+- `runtime`: Android services and broadcast receivers.
+- `di`: Hilt bindings.
 
-`AlarmRingingService` also polls the alarm stream every 250 milliseconds and restores the protected
-volume if it was lowered through system UI while the service is active.
-
-The user verified on the physical Android 14 Tecno device:
-
-- Volume Down and Volume Mute do not silence the alarm while `AlarmActivity` is visible.
-- Lowering the alarm stream through the system volume panel is reversed.
-- Pressing Home does not stop the ringing service or its volume protection.
-- The ongoing alarm notification cannot be dismissed.
-- Tapping the notification returns to the reader with its progress preserved.
-- Completing the challenge stops the alarm and restores the original alarm volume.
-- Killing the process leaves the protected volume in place, but reopening the app restores the
-  saved original volume.
-- Reopening the app after normal completion does not overwrite a later manual volume change.
-- All tests for the final commit-step passed.
-
-## Tecno Process-Kill Finding
-
-On the Tecno device, swiping the app card from Recents while the challenge is active kills the
-activity, foreground service, notification, and alarm sound.
-
-Investigated approaches that did not solve this OEM behavior:
-
-- `singleTask`, a separate task affinity, and `stopWithTask=false`
-- `Service.onTaskRemoved()`
-- running the ringing service in a private application process
-
-After the swipe, `dumpsys package` reported `stopped=false`. The package was process-killed, not
-force-stopped, so AlarmManager is still allowed to wake it later.
-
-The realistic consumer-Android solution is automatic recovery, not making the process impossible to
-kill. Device Owner / kiosk deployment could impose stronger restrictions, but it is intended for
-fully managed dedicated devices and is not appropriate for this consumer alarm app.
-
-## Implemented Reader Architecture
-
-Domain:
+Reader domain:
 
 - `app/src/main/java/com/ruslanataev/razbudilnik/domain/reader/models/ReaderChallenge.kt`
 - `app/src/main/java/com/ruslanataev/razbudilnik/domain/reader/models/ReaderChallengeProgress.kt`
@@ -197,7 +127,7 @@ Domain:
 -
 `app/src/main/java/com/ruslanataev/razbudilnik/domain/reader/usecases/UpdateReaderChallengeProgressUseCase.kt`
 
-Presentation:
+Reader presentation:
 
 - `app/src/main/java/com/ruslanataev/razbudilnik/presentation/ui/reader/ReaderRoute.kt`
 - `app/src/main/java/com/ruslanataev/razbudilnik/presentation/ui/reader/ReaderScreen.kt`
@@ -207,116 +137,257 @@ Presentation:
 -
 `app/src/main/java/com/ruslanataev/razbudilnik/presentation/ui/reader/viewmodel/ReaderViewModel.kt`
 
-Tests:
+## Completed PR 10
 
--
-`app/src/test/java/com/ruslanataev/razbudilnik/domain/reader/usecases/UpdateReaderChallengeProgressUseCaseTest.kt`
--
-`app/src/test/java/com/ruslanataev/razbudilnik/presentation/ui/reader/viewmodel/ReaderViewModelTest.kt`
+PR 10 protects active alarm volume:
 
-## Current Reader Behavior
+- Volume Down and Volume Mute hardware events are consumed while `AlarmActivity` is foreground.
+- `AlarmVolumeController` captures and protects `AudioManager.STREAM_ALARM`.
+- External alarm-volume reductions are detected every 250 milliseconds and reversed.
+- The original alarm-stream volume is restored after successful completion.
+- If the process dies first, the saved original volume is restored from `App.onCreate()`.
 
-`ReaderRoute` owns pointer interaction state:
+The physical Tecno device tests passed for hardware keys, system volume UI, Home/return,
+notification behavior, challenge completion, process death, and original-volume restoration.
 
-- `isFingerDown`
-- `movementDistanceSinceLastTick`
-- `requiredMovementDistancePx = 64.dp.toPx()`
+## PR 11 Status
 
-Every second, it checks whether the accumulated movement distance crossed the threshold. If yes,
-`ReaderViewModel.onReadingInteractionTick()` receives one second of active reading time.
-
-`UpdateReaderChallengeProgressUseCase` currently counts time only when:
+Branch:
 
 ```text
-isFingerDown && isFingerMoving
+11-alarm-kill-recovery
 ```
 
-This is intentional. A pressed but stationary finger must not count.
-
-The smoke-test reading time is currently:
+Proposed PR title:
 
 ```text
-10.seconds
+11. Recover active alarm after process death
 ```
 
-in `CreateInitialReaderChallengeProgressUseCase`. This is temporary for fast testing. The product
-idea is closer to several minutes per page later.
+Goal: automatically restart the active alarm runtime after the Tecno OEM kills the Razbudilnik
+process when the app is removed from Recents.
 
-## Current Alarm Connection
+### Problem Confirmed on Tecno
 
-`AlarmActivity` is annotated with `@AndroidEntryPoint` because it hosts `ReaderRoute`, and
-`ReaderRoute` uses `hiltViewModel()`.
+Swiping the active application from Recents killed:
 
-Current alarm flow:
+- `AlarmActivity`
+- `AlarmRingingService`
+- the ongoing notification
+- alarm sound
 
-1. `AlarmReceiver` starts `AlarmRingingService`.
-2. `AlarmReceiver` launches `AlarmActivity`.
-3. `AlarmActivity` displays `ReaderRoute`.
-4. `ReaderRoute` runs the reading challenge.
-5. `onChallengeFinished` calls `AlarmActivity.stopAlarm()`.
-6. `stopAlarm()` sends `AlarmRingingService.createStopIntent(this)` and finishes the activity.
+The package was not force-stopped. `dumpsys package` reported `stopped=false`, so Android was still
+allowed to deliver a later `AlarmManager` alarm.
 
-Verified by the user:
+Approaches that previously failed:
 
-- Alarm opens the reader.
-- The activity no longer aborts after adding `@AndroidEntryPoint`.
-- Finishing the challenge stops the alarm.
+- `singleTask`
+- separate task affinity
+- `stopWithTask=false`
+- `Service.onTaskRemoved()`
+- a private service process
 
-## Alarm Sound Interaction
+The chosen solution is recovery after process death, not attempting to make a consumer Android
+process impossible to kill.
 
-The reader challenge now controls alarm playback:
+### PR 11 Implementation
 
-1. Alarm sound starts with a smooth fade-in.
-2. Valid finger movement smoothly mutes the sound.
-3. Stopping movement starts a one-second grace period.
-4. If movement resumes during that period, the pending resume is cancelled.
-5. Otherwise, the sound smoothly fades back in.
-6. Leaving `AlarmActivity` restores audible playback.
-7. Finishing the challenge fades out and stops the service.
+New runtime files:
 
-`AlarmRingingService` owns its fade coroutine scope and cancels it in `onDestroy()`.
+- `app/src/main/java/com/ruslanataev/razbudilnik/runtime/alarm/recovery/AlarmRecoveryReceiver.kt`
+- `app/src/main/java/com/ruslanataev/razbudilnik/runtime/alarm/recovery/AlarmRecoveryScheduler.kt`
+- `app/src/main/java/com/ruslanataev/razbudilnik/runtime/alarm/session/ActiveAlarmSession.kt`
+- `app/src/main/java/com/ruslanataev/razbudilnik/runtime/alarm/session/AlarmSessionStore.kt`
 
-Verified by the user:
+Edited runtime files:
 
-- Valid movement mutes the alarm.
-- Stopping movement restores the sound after the grace period.
-- Rapid movement changes reverse the fade smoothly.
-- Leaving the activity restores audible playback.
-- Finishing the challenge stops the service and removes the notification.
+- `app/src/main/java/com/ruslanataev/razbudilnik/runtime/alarm/AlarmRingingService.kt`
+- `app/src/main/AndroidManifest.xml`
+
+Edited presentation entry point:
+
+- `app/src/main/java/com/ruslanataev/razbudilnik/presentation/ui/MainActivity.kt`
+
+The watchdog uses:
+
+```text
+AlarmManager.ELAPSED_REALTIME_WAKEUP
+setExactAndAllowWhileIdle()
+PendingIntent.getBroadcast()
+ACTION_RECOVER_ALARM
+REQUEST_CODE_ALARM_RECOVERY = 3001
+```
+
+Watchdog timing:
+
+```text
+Recovery timeout: 5 seconds
+Healthy-service refresh interval: 2 seconds
+Expected recovery gap after process death: approximately 3-5 seconds plus OEM startup delay
+```
+
+Runtime flow:
+
+1. `AlarmRingingService.startAlarm()` enters foreground mode.
+2. `startRecoveryWatchdog()` immediately schedules recovery for five seconds later.
+3. A coroutine postpones the same watchdog every two seconds.
+4. Reusing the same receiver, action, request code, and PendingIntent type replaces one watchdog
+   instead of creating many.
+5. If the process dies, the coroutine disappears but Android retains the final watchdog deadline.
+6. Android starts a new process and calls `AlarmRecoveryReceiver.onReceive()`.
+7. The receiver starts `AlarmRingingService` with `ACTION_START`, hour, and minute.
+8. The service recreates alarm audio, notification, and the full-screen reader flow.
+9. Normal challenge completion calls `stopRecoveryWatchdog()` before the service fades out.
+
+Active-session launcher flow:
+
+1. `AlarmRingingService` synchronously saves the active alarm hour and minute in dedicated
+   device-protected `SharedPreferences`.
+2. Normal challenge completion clears the active session before the service stops.
+3. Unexpected process death intentionally leaves the active session stored.
+4. `MainActivity.onCreate()` and `onResume()` check the stored session before showing setup.
+5. When a session exists, `MainActivity` starts `AlarmRingingService` with the saved alarm time.
+6. It opens `AlarmActivity` with `FLAG_ACTIVITY_CLEAR_TOP`, reusing the existing reader when that
+   activity is still alive.
+7. It finishes `MainActivity`, preventing the setup screen from becoming an escape from an active
+   reader challenge.
+
+`AlarmRingingService` intentionally returns `START_NOT_STICKY`. Android does not generically restart
+the service with a potentially null Intent; the watchdog performs a controlled restart with the
+correct action and alarm time.
+
+The watchdog is intentionally not cancelled from `AlarmRingingService.onDestroy()`. Abnormal
+destruction must leave Android's scheduled recovery alive. Only legitimate challenge completion
+cancels it.
+
+### PR 11 Verification
+
+Automated checks:
+
+```text
+testDebugUnitTest: passed
+assembleDebug: passed
+git diff --check: passed
+```
+
+Physical Android 14 Tecno verification:
+
+- Active alarm recovered automatically after removing the app from Recents.
+- Recovery occurred with the reduced 5-second timeout.
+- Alarm sound, foreground notification, and reader flow returned.
+- Normal challenge completion cancelled the watchdog.
+- Waiting after normal completion did not restart the alarm.
+- Opening Razbudilnik from its launcher icon during an active challenge returned to the existing
+  reader with its current in-memory progress.
+- After normal challenge completion, opening the launcher icon showed setup and did not restart the
+  alarm.
+
+### PR 11 Limitations
+
+- Explicit Android Force stop cancels alarms and prevents background starts until the user launches
+  the application again. On the next manual launch, the stored active session restores the reader
+  and alarm runtime. The stopped-state restriction itself cannot be bypassed by a normal consumer
+  application.
+- Powering the device off cannot be prevented.
+- Reader progress currently lives in `ReaderViewModel` memory and restarts from the beginning after
+  process death.
+- A severe main-thread stall longer than the watchdog safety margin could cause an unnecessary
+  recovery start. The current application is simple, and the device test did not reproduce this.
+
+## Teaching Protocol
+
+`AGENT.md` now contains a persistent teaching system:
+
+- Explain the feature concept.
+- Explain the chronological Android runtime flow.
+- Explain every new method, parameter, return value, side effect, constant, string, flag,
+  annotation, and unfamiliar Kotlin/Android construct.
+- Put teaching comments above the relevant suggested code.
+- Ask short checkpoint questions.
+- Record only explicitly confirmed understanding in the knowledge profile.
+
+Confirmed concepts currently include:
+
+- Android's `AlarmManager` schedule survives Razbudilnik process death.
+- The ringing service must postpone the watchdog before its timeout.
+- Android, not `AlarmActivity`, calls `AlarmRingingService.onStartCommand()` after a service-start
+  request.
 
 ## Next Action
 
-1. Review and commit this handoff update as `docs: finalize alarm volume protection handoff`.
-2. Push `10-alarm-volume-protection`.
-3. Open PR `10. Protect active alarm volume`.
-4. Merge PR 10 after its checks pass.
-5. Create `11-alarm-kill-recovery`.
+1. Commit this final handoff update if it is not included with the existing documentation change.
+2. Push `11-alarm-kill-recovery`.
+3. Open PR:
 
-Planned scope for PR 11:
+   ```text
+   11. Recover active alarm after process death
+   ```
 
-1. Add a distinct AlarmManager watchdog with its own PendingIntent identity and request code.
-2. While the ringing service is healthy, keep postponing the watchdog trigger.
-3. Cancel the watchdog after successful challenge completion.
-4. If the OEM kills the process, let the watchdog restart the alarm runtime and challenge.
-5. Verify recovery after a Recents swipe and verify that normal completion does not restart the
-   alarm.
+4. Merge PR 11 after its checks pass.
+5. Create:
 
-Do not add Wake Up Check, QR/barcode missions, backup alarms, or other unrelated anti-oversleep
-features to PR 11.
+   ```text
+   12-bundled-book-content
+   ```
+
+## Planned PR 12
+
+Proposed PR title:
+
+```text
+12. Add bundled public-domain reading content
+```
+
+Goal: replace the three hardcoded paragraphs with one real bundled public-domain book or story and
+introduce stable content identity before reading-progress persistence.
+
+Reason for this order:
+
+- The current reader identifies pages only by list indexes.
+- Persisting those indexes now would create disposable storage code.
+- Stable book and page IDs should exist before progress is saved.
+
+Planned scope:
+
+1. Add a book model with stable `id`, `title`, `author`, and pages.
+2. Add stable page IDs.
+3. Add a domain repository abstraction for obtaining reader content.
+4. Add a data implementation that reads one bundled public-domain text from app assets.
+5. Wire the existing reader challenge to the bundled content.
+6. Preserve the current movement, timer, alarm, and navigation behavior.
+7. Add focused domain/ViewModel tests.
+
+Out of scope for PR 12:
+
+- User-imported files
+- TXT file picker
+- FB2 or EPUB parsing
+- book-selection UI
+- reading-progress persistence
+- reader design polish
+
+Likely sequence after PR 12:
+
+```text
+13. Persist active reader progress
+14. Import user TXT books
+15. Add FB2/EPUB support
+```
 
 ## Known Product Gaps
 
 - Multiple alarms are not implemented.
+- Reading content is still hardcoded static text until PR 12.
 - Real book/article storage is not implemented.
 - User-imported books are not implemented.
-- Reading content is hardcoded static text.
-- Required reading time is temporarily `10.seconds` for smoke tests.
+- Reader progress is not persisted.
+- Required reading time remains `10.seconds` for smoke testing.
 - Movement uses finger motion on screen, not physical walking.
 - Reader UI is intentionally bare MVP.
 - Snooze is not implemented.
-- A post-dismissal Wake Up Check is not implemented.
+- Post-dismissal Wake Up Check is not implemented.
 - Backup re-ringing is not implemented.
 - QR/barcode, math, squat, photo, and other alternative challenges are not implemented.
 - Power-off and force-stop prevention are not portable Android guarantees.
 - Notification still uses `android.R.drawable.ic_lock_idle_alarm` instead of an app-owned icon.
-- Direct Boot behavior has only been tested on one physical Android 14 Tecno device.
+- Direct Boot and watchdog recovery have been tested only on one physical Android 14 Tecno device.
