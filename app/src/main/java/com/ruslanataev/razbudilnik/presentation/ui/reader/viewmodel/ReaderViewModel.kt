@@ -70,7 +70,6 @@ class ReaderViewModel @Inject constructor(
         }
 
         challenge = challenge.copy(currentPageIndex = nextPageIndex)
-
         updateState()
     }
 

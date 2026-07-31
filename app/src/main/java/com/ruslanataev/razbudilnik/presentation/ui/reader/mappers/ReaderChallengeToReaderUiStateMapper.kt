@@ -10,14 +10,14 @@ object ReaderChallengeToReaderUiStateMapper {
         challenge: ReaderChallenge,
         progress: ReaderChallengeProgress,
     ): ReaderUiState {
-        val currentPage = challenge.pages[challenge.currentPageIndex]
-
-        val isLastPage = challenge.currentPageIndex == challenge.pages.lastIndex
+        val pages = challenge.pages
+        val currentPage = pages[challenge.currentPageIndex]
+        val isLastPage = challenge.currentPageIndex == pages.lastIndex
 
         return ReaderUiState(
             pageText = currentPage.text,
             pageNumber = challenge.currentPageIndex + 1,
-            pageCount = challenge.pages.size,
+            pageCount = pages.size,
             activeReadingTime = progress.activeReadingTime,
             requiredReadingTime = progress.requiredReadingTime,
             canGoToPreviousPage = challenge.currentPageIndex > 0,
