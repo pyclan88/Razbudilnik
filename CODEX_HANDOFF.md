@@ -26,6 +26,12 @@ Important rules:
 Project path on the current PC:
 
 ```text
+C:\Users\Pyclan\AndroidStudioProjects\Razbudilnik
+```
+
+Project path on the other known PC:
+
+```text
 C:\Users\Asus\AndroidStudioProjects\Razbudilnik
 ```
 
@@ -454,12 +460,47 @@ Then review `AGENT.md` and this handoff before starting the next commit-step:
 Add the bundled Кавказский пленник asset and ReaderBookRepositoryImpl.
 ```
 
-Likely sequence after PR 12:
+## Planned PR 13
+
+Branch:
 
 ```text
-13. Persist active reader progress
-14. Import user TXT books
-15. Add FB2/EPUB support
+13-alarm-challenge-pip-return
+```
+
+Proposed PR title:
+
+```text
+13. Add Picture-in-Picture return to the active challenge
+```
+
+Goal: when the user sends the active reader challenge to the background, keep a small
+Picture-in-Picture return surface visible so the user does not need to find the launcher icon or
+open the notification.
+
+The PiP surface is a convenience entry point, not another way to complete the challenge. It should:
+
+- show that the alarm is still ringing;
+- show compact challenge context such as the current page number;
+- return to the full reader when opened;
+- keep reading progress paused while the full reader is not visible;
+- provide no Stop or dismissal action;
+- disappear after successful challenge completion.
+
+Android's system PiP close control cannot be removed. Closing PiP must hide only the return surface;
+it must not stop the alarm or complete the challenge. The ongoing alarm notification remains the
+fallback return path.
+
+Do not use notification bubbles: Android 11+ reserves normal bubble behavior for conversation
+notifications. Do not request `SYSTEM_ALERT_WINDOW` for this feature: a custom application overlay
+adds a special permission when PiP can provide the required return surface.
+
+Likely sequence after PR 13:
+
+```text
+14. Persist active reader progress
+15. Import user TXT books
+16. Add FB2/EPUB support
 ```
 
 ## Known Product Gaps
@@ -469,6 +510,8 @@ Likely sequence after PR 12:
 - Real book/article storage is not implemented.
 - User-imported books are not implemented.
 - Reader progress is not persisted.
+- Returning to a minimized active challenge still requires the launcher icon or notification until
+  PR 13 adds the PiP return surface.
 - Required reading time remains `10.seconds` for smoke testing.
 - Movement uses finger motion on screen, not physical walking.
 - Reader UI is intentionally bare MVP.
