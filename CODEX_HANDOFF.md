@@ -2,7 +2,7 @@
 
 ## Start Here
 
-Read `AGENT.md` before doing anything.
+`AGENTS.md` is loaded automatically. Follow its session-startup instructions before doing anything.
 
 Important rules:
 
@@ -15,7 +15,7 @@ Important rules:
 - Always show concrete code suggestions with exact full file paths.
 - Teach new code at the concept, runtime-flow, and method/API/syntax levels.
 - Put teaching comments above unfamiliar code.
-- Use the knowledge profile in `AGENT.md`; do not infer understanding from a successful build.
+- Use the knowledge profile in `AGENTS.md`; do not infer understanding from a successful build.
 - Follow Clean Architecture boundaries.
 - Work in one logical commit-step at a time.
 - End every commit-step with review, testing, a commit message, and the next step.
@@ -304,7 +304,7 @@ Physical Android 14 Tecno verification:
 
 ## Teaching Protocol
 
-`AGENT.md` now contains a persistent teaching system:
+`AGENTS.md` contains a persistent teaching system:
 
 - Explain the feature concept.
 - Explain the chronological Android runtime flow.
@@ -454,7 +454,7 @@ git switch 12-bundled-book-content
 git pull
 ```
 
-Then review `AGENT.md` and this handoff before starting the next commit-step:
+`AGENTS.md` automatically requires this handoff to be read before starting the next commit-step:
 
 ```text
 Add the bundled Кавказский пленник asset and ReaderBookRepositoryImpl.
