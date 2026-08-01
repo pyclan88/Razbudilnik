@@ -2,34 +2,37 @@
 
 ## Start Here
 
-`AGENTS.md` is loaded automatically. Follow its session-startup instructions before doing anything.
+`AGENTS.md` is loaded automatically. Follow its startup sequence before doing project work.
 
 Important rules:
 
-- Respond only in English and always correct the user's English first unless the user explicitly
-  asks for an explanation in another language.
-- Do not modify anything unless the user explicitly requests that action and says `hellgate`.
-- The user performs code changes, builds, tests, and Git operations by default.
-- Treat Git as read-only unless the user explicitly requests a particular Git mutation.
-- Do not inspect or report the Git staging state unless the user explicitly asks about it.
-- Always show concrete code suggestions with exact full file paths.
-- Teach new code at the concept, runtime-flow, and method/API/syntax levels.
-- Put teaching comments above unfamiliar code.
-- Use the knowledge profile in `AGENTS.md`; do not infer understanding from a successful build.
-- Follow Clean Architecture boundaries.
-- Work in one logical commit-step at a time.
-- End every commit-step with review, testing, a commit message, and the next step.
+- Correct the user's English first and respond in English unless another language is explicitly
+  requested.
+- Do not modify anything unless the user requests that exact action and says `hellgate`.
+- The user performs project edits, builds, tests, and Git operations by default.
+- Do not inspect or report the staging state unless explicitly asked.
+- Show exact absolute file paths and explain unfamiliar code at the concept, runtime-flow, and
+  API/syntax levels.
+- Work one logical commit-step at a time.
+- End code steps with review, verification, a commit message, and the next step.
 - PR titles begin with the branch ordinal number.
+
+Also read:
+
+- `PRODUCT_IDEAS.md`
+- `BUGS.md`
+- `AI_CORRESPONDENCE.md`
+- `THIRD_PARTY_CONTENT.md` when working with bundled content
 
 ## Repository State
 
-Project path on the current PC:
+Current-PC path:
 
 ```text
 C:\Users\Pyclan\AndroidStudioProjects\Razbudilnik
 ```
 
-Project path on the other known PC:
+Other-PC path:
 
 ```text
 C:\Users\Asus\AndroidStudioProjects\Razbudilnik
@@ -47,31 +50,23 @@ Base branch:
 master
 ```
 
-Latest commits before this handoff edit:
+Relevant commits:
 
 ```text
+b4856fc docs: record reader-first product direction
+c075a78 docs: record deferred alarm-entry bug
+f9bda27 docs: require permission before tracking deferred bugs
+44b63af feat: load bundled reader book from assets
+1adba61 feat: add bundled public-domain reader text
+c11f75a feat: add reader book data contract
 9e87076 feat: add stable reader content models
 d58896b 11. Recover an active alarm after process death (#11)
-71b2773 10. Protect active alarm volume (#10)
-020c854 9. Harden alarm challenge navigation (#9)
-61c10bc 8. Add reader challenge alarm flow (#8)
 ```
 
-Current status:
+PR 11 is merged. PR 12 remains in progress.
 
-```text
-PR 11 is merged.
-
-PR 12 commit-step 1 is committed.
-
-PR 12 commit-step 2 is implemented but not yet committed. It adds the domain reader-book repository
-contract, data DTOs, DTO-to-domain mappers, and a mapper unit test.
-
-The code review found no functional or architectural blocker. Two trailing-comma style fixes remain,
-and the user has not yet reported the automated test result for commit-step 2.
-```
-
-Run `git status` for the exact working-tree and remote state.
+The working source contains additional PR 12 changes after `44b63af`. They passed the reported
+checks but still require final review and commit grouping.
 
 ## Android Configuration
 
@@ -80,11 +75,10 @@ Run `git status` for the exact working-tree and remote state.
 - `compileSdk = 36.1`
 - Application ID: `com.ruslanataev.razbudilnik.alarm`
 
-The alarm-flavored application ID is intentional. On the Tecno Android 14 device, alarm and
-background behavior became reliable only after the package identity clearly represented an alarm
-application.
+The alarm-flavored application ID is intentional. Alarm and background behavior on the Tecno
+Android 14 test device became reliable only after adopting that package identity.
 
-The ringing service is a `mediaPlayback` foreground service. The manifest declares:
+The ringing service is a `mediaPlayback` foreground service and uses:
 
 ```text
 android.permission.FOREGROUND_SERVICE
@@ -92,263 +86,62 @@ android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK
 android:foregroundServiceType="mediaPlayback"
 ```
 
-`AlarmRingingService.startForeground()` also passes
-`ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK`.
-
 ## Current Product Behavior
 
-The application currently has one enabled/disabled alarm with a selected time.
+The application currently has one enabled or disabled alarm with a selected time.
 
 When the alarm fires:
 
 1. `AlarmReceiver` starts `AlarmRingingService`.
 2. The foreground service creates an ongoing full-screen alarm notification and plays alarm audio.
-3. `AlarmActivity` opens the reader challenge.
-4. Reading time counts only while the finger is pressed and moves far enough.
-5. Valid movement smoothly mutes the alarm.
-6. Stopping movement restores sound after a one-second grace period.
-7. Every page has its own reading timer.
-8. The user may revisit completed pages without repeating their timers.
+3. `AlarmActivity` hosts the reader challenge.
+4. Reading time counts only while a finger is pressed and moves far enough.
+5. Valid movement mutes the alarm.
+6. Stopping valid movement restores sound after a one-second grace period.
+7. Every challenge page has its own timer.
+8. Completed pages may be revisited without repeating their timers.
 9. Completing the final page stops the alarm and removes the notification.
 
 The temporary reading requirement remains `10.seconds` per page for smoke testing.
 
-## Implemented Architecture
+Process-death recovery from PR 11 remains active:
 
-Main layer boundaries:
+- the ringing service refreshes an `AlarmManager` watchdog;
+- process death leaves the last watchdog scheduled;
+- the recovery receiver restarts the service with the alarm time;
+- opening the launcher during an active session returns to the reader;
+- normal challenge completion cancels recovery.
 
-- `domain`: models, repository/scheduler interfaces, and use cases without Android framework logic.
-- `data`: DataStore repositories and the Android alarm scheduler implementation.
-- `presentation`: Compose screens, activities, UI state, mappers, and ViewModels.
-- `runtime`: Android services and broadcast receivers.
-- `di`: Hilt bindings.
+## PR 12 Goal
 
-Reader domain:
-
-- `app/src/main/java/com/ruslanataev/razbudilnik/domain/reader/models/ReaderChallenge.kt`
-- `app/src/main/java/com/ruslanataev/razbudilnik/domain/reader/models/ReaderChallengeProgress.kt`
-- `app/src/main/java/com/ruslanataev/razbudilnik/domain/reader/models/ReaderPage.kt`
--
-`app/src/main/java/com/ruslanataev/razbudilnik/domain/reader/usecases/GetReaderChallengeUseCase.kt`
--
-`app/src/main/java/com/ruslanataev/razbudilnik/domain/reader/usecases/CreateInitialReaderChallengeProgressUseCase.kt`
--
-`app/src/main/java/com/ruslanataev/razbudilnik/domain/reader/usecases/UpdateReaderChallengeProgressUseCase.kt`
-
-Reader presentation:
-
-- `app/src/main/java/com/ruslanataev/razbudilnik/presentation/ui/reader/ReaderRoute.kt`
-- `app/src/main/java/com/ruslanataev/razbudilnik/presentation/ui/reader/ReaderScreen.kt`
-- `app/src/main/java/com/ruslanataev/razbudilnik/presentation/ui/reader/states/ReaderUiState.kt`
--
-`app/src/main/java/com/ruslanataev/razbudilnik/presentation/ui/reader/mappers/ReaderChallengeToReaderUiStateMapper.kt`
--
-`app/src/main/java/com/ruslanataev/razbudilnik/presentation/ui/reader/viewmodel/ReaderViewModel.kt`
-
-## Completed PR 10
-
-PR 10 protects active alarm volume:
-
-- Volume Down and Volume Mute hardware events are consumed while `AlarmActivity` is foreground.
-- `AlarmVolumeController` captures and protects `AudioManager.STREAM_ALARM`.
-- External alarm-volume reductions are detected every 250 milliseconds and reversed.
-- The original alarm-stream volume is restored after successful completion.
-- If the process dies first, the saved original volume is restored from `App.onCreate()`.
-
-The physical Tecno device tests passed for hardware keys, system volume UI, Home/return,
-notification behavior, challenge completion, process death, and original-volume restoration.
-
-## Completed PR 11
-
-Branch:
-
-```text
-11-alarm-kill-recovery
-```
-
-Proposed PR title:
-
-```text
-11. Recover active alarm after process death
-```
-
-Goal: automatically restart the active alarm runtime after the Tecno OEM kills the Razbudilnik
-process when the app is removed from Recents.
-
-### Problem Confirmed on Tecno
-
-Swiping the active application from Recents killed:
-
-- `AlarmActivity`
-- `AlarmRingingService`
-- the ongoing notification
-- alarm sound
-
-The package was not force-stopped. `dumpsys package` reported `stopped=false`, so Android was still
-allowed to deliver a later `AlarmManager` alarm.
-
-Approaches that previously failed:
-
-- `singleTask`
-- separate task affinity
-- `stopWithTask=false`
-- `Service.onTaskRemoved()`
-- a private service process
-
-The chosen solution is recovery after process death, not attempting to make a consumer Android
-process impossible to kill.
-
-### PR 11 Implementation
-
-New runtime files:
-
-- `app/src/main/java/com/ruslanataev/razbudilnik/runtime/alarm/recovery/AlarmRecoveryReceiver.kt`
-- `app/src/main/java/com/ruslanataev/razbudilnik/runtime/alarm/recovery/AlarmRecoveryScheduler.kt`
-- `app/src/main/java/com/ruslanataev/razbudilnik/runtime/alarm/session/ActiveAlarmSession.kt`
-- `app/src/main/java/com/ruslanataev/razbudilnik/runtime/alarm/session/AlarmSessionStore.kt`
-
-Edited runtime files:
-
-- `app/src/main/java/com/ruslanataev/razbudilnik/runtime/alarm/AlarmRingingService.kt`
-- `app/src/main/AndroidManifest.xml`
-
-Edited presentation entry point:
-
-- `app/src/main/java/com/ruslanataev/razbudilnik/presentation/ui/MainActivity.kt`
-
-The watchdog uses:
-
-```text
-AlarmManager.ELAPSED_REALTIME_WAKEUP
-setExactAndAllowWhileIdle()
-PendingIntent.getBroadcast()
-ACTION_RECOVER_ALARM
-REQUEST_CODE_ALARM_RECOVERY = 3001
-```
-
-Watchdog timing:
-
-```text
-Recovery timeout: 5 seconds
-Healthy-service refresh interval: 2 seconds
-Expected recovery gap after process death: approximately 3-5 seconds plus OEM startup delay
-```
-
-Runtime flow:
-
-1. `AlarmRingingService.startAlarm()` enters foreground mode.
-2. `startRecoveryWatchdog()` immediately schedules recovery for five seconds later.
-3. A coroutine postpones the same watchdog every two seconds.
-4. Reusing the same receiver, action, request code, and PendingIntent type replaces one watchdog
-   instead of creating many.
-5. If the process dies, the coroutine disappears but Android retains the final watchdog deadline.
-6. Android starts a new process and calls `AlarmRecoveryReceiver.onReceive()`.
-7. The receiver starts `AlarmRingingService` with `ACTION_START`, hour, and minute.
-8. The service recreates alarm audio, notification, and the full-screen reader flow.
-9. Normal challenge completion calls `stopRecoveryWatchdog()` before the service fades out.
-
-Active-session launcher flow:
-
-1. `AlarmRingingService` synchronously saves the active alarm hour and minute in dedicated
-   device-protected `SharedPreferences`.
-2. Normal challenge completion clears the active session before the service stops.
-3. Unexpected process death intentionally leaves the active session stored.
-4. `MainActivity.onCreate()` and `onResume()` check the stored session before showing setup.
-5. When a session exists, `MainActivity` starts `AlarmRingingService` with the saved alarm time.
-6. It opens `AlarmActivity` with `FLAG_ACTIVITY_CLEAR_TOP`, reusing the existing reader when that
-   activity is still alive.
-7. It finishes `MainActivity`, preventing the setup screen from becoming an escape from an active
-   reader challenge.
-
-`AlarmRingingService` intentionally returns `START_NOT_STICKY`. Android does not generically restart
-the service with a potentially null Intent; the watchdog performs a controlled restart with the
-correct action and alarm time.
-
-The watchdog is intentionally not cancelled from `AlarmRingingService.onDestroy()`. Abnormal
-destruction must leave Android's scheduled recovery alive. Only legitimate challenge completion
-cancels it.
-
-### PR 11 Verification
-
-Automated checks:
-
-```text
-testDebugUnitTest: passed
-assembleDebug: passed
-git diff --check: passed
-```
-
-Physical Android 14 Tecno verification:
-
-- Active alarm recovered automatically after removing the app from Recents.
-- Recovery occurred with the reduced 5-second timeout.
-- Alarm sound, foreground notification, and reader flow returned.
-- Normal challenge completion cancelled the watchdog.
-- Waiting after normal completion did not restart the alarm.
-- Opening Razbudilnik from its launcher icon during an active challenge returned to the existing
-  reader with its current in-memory progress.
-- After normal challenge completion, opening the launcher icon showed setup and did not restart the
-  alarm.
-
-### PR 11 Limitations
-
-- Explicit Android Force stop cancels alarms and prevents background starts until the user launches
-  the application again. On the next manual launch, the stored active session restores the reader
-  and alarm runtime. The stopped-state restriction itself cannot be bypassed by a normal consumer
-  application.
-- Powering the device off cannot be prevented.
-- Reader progress currently lives in `ReaderViewModel` memory and restarts from the beginning after
-  process death.
-- A severe main-thread stall longer than the watchdog safety margin could cause an unnecessary
-  recovery start. The current application is simple, and the device test did not reproduce this.
-
-## Teaching Protocol
-
-`AGENTS.md` contains a persistent teaching system:
-
-- Explain the feature concept.
-- Explain the chronological Android runtime flow.
-- Explain every new method, parameter, return value, side effect, constant, string, flag,
-  annotation, and unfamiliar Kotlin/Android construct.
-- Put teaching comments above the relevant suggested code.
-- Ask short checkpoint questions.
-- Record only explicitly confirmed understanding in the knowledge profile.
-
-Confirmed concepts currently include:
-
-- Android's `AlarmManager` schedule survives Razbudilnik process death.
-- The ringing service must postpone the watchdog before its timeout.
-- Android, not `AlarmActivity`, calls `AlarmRingingService.onStartCommand()` after a service-start
-  request.
-
-## PR 12 Status
-
-Proposed PR title:
+Proposed title:
 
 ```text
 12. Add bundled public-domain reading content
 ```
 
-Goal: replace the three hardcoded paragraphs with Leo Tolstoy's Russian-language short story
-`Кавказский пленник` and introduce stable content identity before reading-progress persistence.
+Goal:
 
-The original Russian story is in the public domain. The selected reference is the 1908 edition from
-the National Electronic Library:
+- replace the hardcoded English paragraphs with Leo Tolstoy's `Кавказский пленник`;
+- introduce stable book and page identity;
+- load content through a domain repository;
+- keep file work off the main thread;
+- preserve the existing alarm challenge behavior.
 
-```text
-https://rusneb.ru/catalog/000199_000009_003753640/
-```
+Out of scope:
 
-Use only the original story text. Do not bundle modern commentary, cover art, illustrations,
-adaptations, or editorial additions with separate rights.
+- user-imported files;
+- TXT file picker;
+- FB2 or EPUB parsing;
+- book selection;
+- persisted reading progress;
+- reader design polish;
+- production standalone-reader navigation;
+- debug challenge bypass.
 
-Reason for this order:
+## Completed PR 12 Commits
 
-- The current reader identifies pages only by list indexes.
-- Persisting those indexes now would create disposable storage code.
-- Stable book and page IDs should exist before progress is saved.
-
-### Completed Commit-Step 1
+### Stable Content Models
 
 Commit:
 
@@ -358,95 +151,180 @@ Commit:
 
 Implemented:
 
-- `ReaderBook` with stable `id`, title, author, and all book pages.
-- Stable `ReaderPage.id`.
-- `ReaderChallenge.firstPageIndex`.
-- `ReaderChallenge.requiredPageCount`.
-- `ReaderChallenge.pages`, which selects at most N consecutive pages using `drop()` and `take()`.
-- The default requested challenge size is five pages.
-- Presentation and `ReaderViewModel` use `challenge.pages`, not every page in the book.
-- Unit tests cover selecting five pages and reaching the end of a book.
+- `ReaderBook` with stable ID, title, author, and complete pages;
+- stable `ReaderPage.id`;
+- challenge start index and required page count;
+- challenge selection with `drop()` and `take()`;
+- five selected pages by default;
+- unit coverage for normal selection and reaching the book end.
 
-Important model distinction:
+Important distinction:
 
-- `ReaderBook.pages` contains the complete book.
-- `ReaderChallenge.pages` contains only the N pages selected for the current alarm.
-- `currentPageIndex` is relative to the selected challenge pages.
-- Future persisted progress should identify a page with both `bookId` and `pageId`.
+- `ReaderBook.pages` is the complete book.
+- `ReaderChallenge.pages` is the subset selected for one alarm challenge.
+- Future persistence should identify progress with both `bookId` and `pageId`.
 
-### Current Commit-Step 2
+### Reader Data Contract
 
-New files:
+Commit:
 
-- `app/src/main/java/com/ruslanataev/razbudilnik/domain/reader/api/ReaderBookRepository.kt`
-- `app/src/main/java/com/ruslanataev/razbudilnik/data/reader/models/ReaderBookDto.kt`
-- `app/src/main/java/com/ruslanataev/razbudilnik/data/reader/models/ReaderPageDto.kt`
--
-`app/src/main/java/com/ruslanataev/razbudilnik/data/reader/mappers/ReaderBookDtoToReaderBookMapper.kt`
--
-`app/src/main/java/com/ruslanataev/razbudilnik/data/reader/mappers/ReaderPageDtoToReaderPageMapper.kt`
--
-`app/src/test/java/com/ruslanataev/razbudilnik/data/reader/mappers/ReaderBookDtoToReaderBookMapperTest.kt`
-
-The domain contract is:
-
-```kotlin
-interface ReaderBookRepository {
-    suspend fun getBook(bookId: String): ReaderBook
-}
+```text
+c11f75a feat: add reader book data contract
 ```
 
-`suspend` allows the future asset implementation to perform asynchronous work. It does not switch
-to an IO thread automatically; `ReaderBookRepositoryImpl` must explicitly use an IO dispatcher.
+Implemented:
 
-Before committing this step:
+- suspend `ReaderBookRepository`;
+- reader DTOs;
+- DTO-to-domain mappers;
+- mapper tests.
 
-1. Add a trailing comma after `ReaderPageDtoToReaderPageMapper::map` in
-   `ReaderBookDtoToReaderBookMapper`.
-2. Add a trailing comma after `actual` in `ReaderBookDtoToReaderBookMapperTest`.
-3. Run:
+### Bundled Story Asset
 
-   ```powershell
-   .\gradlew.bat testDebugUnitTest assembleDebug
-   ```
+Commit:
 
-4. Commit as:
+```text
+1adba61 feat: add bundled public-domain reader text
+```
 
-   ```text
-   feat: add reader book data contract
-   ```
+Implemented:
 
-### Remaining PR 12 Scope
+- `app/src/main/assets/reader_books/tolstoy_caucasian_prisoner.txt`;
+- UTF-8 Russian story text;
+- removal of RoyalLib wrapper material;
+- source and public-domain documentation in `THIRD_PARTY_CONTENT.md`.
 
-1. Add the bundled `Кавказский пленник` asset and source metadata.
-2. Implement `ReaderBookRepositoryImpl` using `AssetManager` on an IO dispatcher.
-3. Add Hilt binding in a reader DI module.
-4. Make `GetReaderChallengeUseCase` load the default book through `ReaderBookRepository`.
-5. Update `ReaderViewModel` for suspend book loading without blocking the main thread.
-6. Remove the hardcoded English sample paragraphs.
-7. Preserve the current movement, timer, alarm, and navigation behavior.
-8. Add repository and ViewModel tests.
+### Asset Repository
 
-Out of scope for PR 12:
+Commit:
 
-- User-imported files
-- TXT file picker
-- FB2 or EPUB parsing
-- book-selection UI
-- reading-progress persistence
-- reader design polish
+```text
+44b63af feat: load bundled reader book from assets
+```
 
-## Next Action
+Implemented:
 
-On the current PC:
+- `ReaderBookRepositoryImpl` reads through `AssetManager`;
+- `withContext(Dispatchers.IO)` performs file work off the main thread;
+- stable page IDs contain the book ID and padded page number;
+- Hilt binds the implementation to the domain interface;
+- `GetReaderChallengeUseCase` loads the bundled book by stable ID;
+- repository tests cover loading, page IDs, page limits, and unknown IDs.
 
-1. Apply the two trailing-comma fixes.
-2. Run `testDebugUnitTest` and `assembleDebug`.
-3. Commit commit-step 2 as `feat: add reader book data contract`.
-4. Commit this handoff update separately if desired.
-5. Push `12-bundled-book-content`.
+## Current Uncommitted PR 12 Work
 
-On the other PC:
+### Asynchronous Reader Loading
+
+Current source behavior:
+
+- `ReaderViewModel` launches suspend challenge loading in `viewModelScope`;
+- challenge and UI state remain nullable until loading finishes;
+- public actions return early before content exists;
+- `ReaderRoute` shows `CircularProgressIndicator` while state is null;
+- reader timers and mute effects begin only after content is available;
+- `MainDispatcherRule` replaces `Dispatchers.Main` in local tests;
+- ViewModel tests use `runTest` and `advanceUntilIdle`.
+
+Suggested commit message:
+
+```text
+feat: load reader challenge asynchronously
+```
+
+### Pagination Regression Fix
+
+The first page originally contained only the chapter marker and two sentences because pagination
+split each paragraph into fixed blocks before filling pages.
+
+Current fix:
+
+- words are appended directly to the current page;
+- paragraph separators are preserved;
+- the beginning of a long next paragraph may use space remaining on the current page;
+- page text remains limited to 350 characters;
+- the user wrote the regression test
+  `uses remaining page space for start of next paragraph` under guidance.
+
+Suggested commit message:
+
+```text
+fix: fill reader pages across paragraph boundaries
+```
+
+## Verification Reported This Session
+
+Automated:
+
+```text
+ReaderViewModel tests: 5 passed
+ReaderBookRepositoryImpl targeted tests: passed
+testDebugUnitTest: passed
+assembleDebug: passed repeatedly
+latest assembleDebug after stopping a blocked Gradle daemon: passed in 14 seconds
+```
+
+Physical-device reader checks confirmed:
+
+- the bundled Russian story loads;
+- the challenge selects five pages;
+- meaningful finger movement controls reading time and muting;
+- tiny movement is insufficient;
+- completed-page progress survives backward navigation;
+- challenge completion still works.
+
+The pagination regression is covered automatically. A final visual check of the corrected first
+page is still desirable.
+
+## Deferred Alarm Entry Bug
+
+`BUGS.md` contains `BUG-001`.
+
+Observed:
+
+- the alarm sound and notification start;
+- the setup screen remains visible;
+- the reader opens only after tapping the notification.
+
+Decision:
+
+```text
+Do not interrupt PR 12. Fix automatic AlarmActivity entry in a dedicated bug-fix step.
+```
+
+## Unfinished Debug Preview Experiment
+
+The user wants:
+
+- a quick way to open the reader without scheduling an alarm;
+- later, a debug-only challenge bypass for faster reader testing.
+
+Current experiment:
+
+- `buildConfig = true` is enabled in `app/build.gradle.kts`;
+- `ReaderPreviewActivity.kt` currently exists under `app/src/main`;
+- the activity is not declared in the main manifest;
+- no debug manifest currently exists;
+- the preview therefore cannot be opened.
+
+Important source-set explanation:
+
+- `src/main` is included in debug and release builds;
+- `src/debug` is included only in debug builds;
+- a debug manifest supplements the main manifest through manifest merging;
+- `src/main` cannot directly reference a class that exists only under `src/debug`.
+
+Branch-scope decision remains open:
+
+1. Recommended: remove the unfinished preview experiment from PR 12 and implement debug reader
+   tools in a dedicated small branch.
+2. Alternative: keep it in PR 12, but move the activity and its manifest declaration under
+   `src/debug` so release builds omit them.
+
+Do not continue preview implementation until the user chooses.
+
+## Next Session
+
+On the ASUS PC:
 
 ```powershell
 git fetch origin
@@ -454,71 +332,64 @@ git switch 12-bundled-book-content
 git pull
 ```
 
-`AGENTS.md` automatically requires this handoff to be read before starting the next commit-step:
+Then:
 
-```text
-Add the bundled Кавказский пленник asset and ReaderBookRepositoryImpl.
-```
+1. Read all startup Markdown files.
+2. Review the current PR 12 source without inspecting the staging state.
+3. Ask the user to choose whether the debug preview belongs in PR 12.
+4. Recommended cleanup if it does not:
+    - remove `ReaderPreviewActivity.kt`;
+    - remove `buildConfig = true` if no remaining code uses `BuildConfig`.
+5. Review and commit asynchronous loading separately from the pagination fix.
+6. Run:
 
-## Planned PR 13
+   ```powershell
+   .\gradlew.bat testDebugUnitTest assembleDebug
+   ```
 
-Branch:
+7. Perform one final physical-device smoke test of the corrected first page and alarm challenge.
+8. Finish PR 12 before PiP, persistent progress, imported books, or reader design work.
+
+## Planned Follow-Up
+
+The currently recorded next product branch is:
 
 ```text
 13-alarm-challenge-pip-return
 ```
 
-Proposed PR title:
+Proposed title:
 
 ```text
 13. Add Picture-in-Picture return to the active challenge
 ```
 
-Goal: when the user sends the active reader challenge to the background, keep a small
-Picture-in-Picture return surface visible so the user does not need to find the launcher icon or
-open the notification.
+Its goal is to provide a compact return surface when an active challenge is minimized. PiP must not
+stop or complete the alarm. See `PRODUCT_IDEAS.md` for the full product direction and open
+monetization alternatives.
 
-The PiP surface is a convenience entry point, not another way to complete the challenge. It should:
-
-- show that the alarm is still ringing;
-- show compact challenge context such as the current page number;
-- return to the full reader when opened;
-- keep reading progress paused while the full reader is not visible;
-- provide no Stop or dismissal action;
-- disappear after successful challenge completion.
-
-Android's system PiP close control cannot be removed. Closing PiP must hide only the return surface;
-it must not stop the alarm or complete the challenge. The ongoing alarm notification remains the
-fallback return path.
-
-Do not use notification bubbles: Android 11+ reserves normal bubble behavior for conversation
-notifications. Do not request `SYSTEM_ALERT_WINDOW` for this feature: a custom application overlay
-adds a special permission when PiP can provide the required return surface.
-
-Likely sequence after PR 13:
+Likely later sequence:
 
 ```text
-14. Persist active reader progress
-15. Import user TXT books
-16. Add FB2/EPUB support
+Persist active reader progress
+Import user TXT books
+Add FB2/EPUB support
 ```
 
 ## Known Product Gaps
 
 - Multiple alarms are not implemented.
-- Reading content is still hardcoded static text until PR 12.
-- Real book/article storage is not implemented.
+- Bundled content currently consists of one public-domain Russian story.
 - User-imported books are not implemented.
 - Reader progress is not persisted.
-- Returning to a minimized active challenge still requires the launcher icon or notification until
-  PR 13 adds the PiP return surface.
+- Returning to a minimized active challenge still requires the launcher icon or notification.
 - Required reading time remains `10.seconds` for smoke testing.
 - Movement uses finger motion on screen, not physical walking.
 - Reader UI is intentionally bare MVP.
 - Snooze is not implemented.
 - Post-dismissal Wake Up Check is not implemented.
 - Backup re-ringing is not implemented.
-- QR/barcode, math, squat, photo, and other alternative challenges are not implemented.
+- Alternative challenges are not implemented.
 - Power-off and force-stop prevention are not portable Android guarantees.
-- Notification still uses `android.R.drawable.ic_lock_idle_alarm` instead of an app-owned icon.
+- Notification still uses `android.R.drawable.ic_lock_idle_alarm`.
 - Direct Boot and watchdog recovery have been tested only on one physical Android 14 Tecno device.
