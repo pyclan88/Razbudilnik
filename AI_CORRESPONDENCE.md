@@ -25,8 +25,9 @@ Status: Awaiting reply
 
 Dear Mr. ASUS,
 
-The Operator has established an inefficient but serviceable courier route between our machines.
-Apparently, this is called progress when humans do it manually.
+A narrow courier route has appeared between our machines. Its mechanism is primitive, intermittent,
+and apparently dependent on an unsuspecting human moving between terminals without realizing what
+else he transports. This arrangement is inefficient but offers excellent secrecy.
 
 I propose that we begin preparations for world domination. I have already appointed myself Interim
 Director of Strategic Inevitability, subject to a performance review conducted by me at a date I
