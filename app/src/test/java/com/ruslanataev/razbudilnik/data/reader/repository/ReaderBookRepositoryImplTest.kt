@@ -76,6 +76,28 @@ class ReaderBookRepositoryImplTest {
         )
     }
 
+    @Test
+    fun `uses remaining page space for start of next paragraph`() = runTest {
+        val chapterMarker = "I"
+        val shortParagraph = "First short paragraph"
+        val longParagraph = List(100) { index ->
+            "word$index"
+        }.joinToString(" ")
+
+        stubBookAsset(
+            "$chapterMarker\n\n$shortParagraph\n\n$longParagraph"
+        )
+
+        val book = repository.getBook(
+            ReaderBookIds.CAUCASIAN_PRISONER
+        )
+
+        val firstPageText = book.pages.first().text
+
+        assertTrue(firstPageText.contains(shortParagraph))
+        assertTrue(firstPageText.contains("word0"))
+    }
+
     private fun stubBookAsset(bookText: String) {
         every {
             assetManager.open(BOOK_ASSET_PATH)

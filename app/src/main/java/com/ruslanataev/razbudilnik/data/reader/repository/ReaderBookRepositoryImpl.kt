@@ -66,29 +66,38 @@ class ReaderBookRepositoryImpl @Inject constructor(
             .trim()
             .split(PARAGRAPH_SEPARATOR_REGEX)
 
-        val pageBlocks = paragraphs.flatMap { paragraph ->
-            splitParagraphIntoPageBlocks(paragraph.trim())
-        }
-
         val pages = mutableListOf<String>()
         val currentPage = StringBuilder()
 
-        pageBlocks.forEach { block ->
-            val separatorLength = if (currentPage.isEmpty()) 0 else PARAGRAPH_SEPARATOR.length
+        paragraphs.forEach { paragraph ->
+            val words = paragraph
+                .trim()
+                .split(WHITESPACE_REGEX)
 
-            val blockFitsCurrentPage =
-                currentPage.length + separatorLength + block.length <= MAX_PAGE_CHARACTER_COUNT
+            var isFirstWordInParagraph = true
 
-            if (!blockFitsCurrentPage && currentPage.isNotEmpty()) {
-                pages += currentPage.toString()
-                currentPage.clear()
+            words.forEach { word ->
+                var separator = when {
+                    currentPage.isEmpty() -> ""
+                    isFirstWordInParagraph -> PARAGRAPH_SEPARATOR
+                    else -> " "
+                }
+
+                val wordFitsCurrentPage =
+                    currentPage.length + separator.length + word.length <= MAX_PAGE_CHARACTER_COUNT
+
+                if (!wordFitsCurrentPage && currentPage.isNotEmpty()) {
+                    pages += currentPage.toString()
+                    currentPage.clear()
+
+                    separator = ""
+                }
+
+                currentPage.append(separator)
+                currentPage.append(word)
+
+                isFirstWordInParagraph = false
             }
-
-            if (currentPage.isNotEmpty()) {
-                currentPage.append(PARAGRAPH_SEPARATOR)
-            }
-
-            currentPage.append(block)
         }
 
         if (currentPage.isNotEmpty()) {
@@ -96,34 +105,6 @@ class ReaderBookRepositoryImpl @Inject constructor(
         }
 
         return pages
-    }
-
-    private fun splitParagraphIntoPageBlocks(paragraph: String): List<String> {
-        val blocks = mutableListOf<String>()
-        val currentBlock = StringBuilder()
-
-        paragraph.split(WHITESPACE_REGEX).forEach { word ->
-            val separatorLength = if (currentBlock.isEmpty()) 0 else 1
-            val wordFitsCurrentBlock =
-                currentBlock.length + separatorLength + word.length <= MAX_PAGE_CHARACTER_COUNT
-
-            if (!wordFitsCurrentBlock && currentBlock.isNotEmpty()) {
-                blocks += currentBlock.toString()
-                currentBlock.clear()
-            }
-
-            if (currentBlock.isNotEmpty()) {
-                currentBlock.append(' ')
-            }
-
-            currentBlock.append(word)
-        }
-
-        if (currentBlock.isNotEmpty()) {
-            blocks += currentBlock.toString()
-        }
-
-        return blocks
     }
 
     private companion object {
