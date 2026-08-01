@@ -108,6 +108,58 @@ Related work:
 - Depends on stable book identity and reader-progress persistence.
 - Book selection and library UI remain separate product decisions.
 
+### IDEA-004: Explain The Alarm Challenge Contract
+
+Status: `Candidate`
+
+Before the user enables an alarm for the first time, clearly explain that completing the reading
+challenge is the normal way to dismiss the alarm.
+
+The explanation must also teach the temporary silencing gesture:
+
+- Keep moving a finger across the reader to keep the alarm quiet.
+- Stopping the movement causes the alarm sound to return.
+- Completing every required page dismisses the alarm.
+
+UX direction:
+
+- Show a one-time confirmation sheet before enabling the first alarm.
+- Include a `Try gesture` action so the user can practise the interaction while fully awake.
+- Let the practice surface demonstrate both successful movement and what happens when movement
+  stops.
+- During a real challenge, show short state guidance such as `Move your finger to quiet the alarm`,
+  `Quiet while moving`, and `Keep moving to stay quiet`.
+- Do not claim that stopping the alarm is technically impossible because Android still permits
+  force-stop, uninstalling, and powering off the device.
+
+Related ideas:
+
+- IDEA-005: Finger Movement Feedback
+
+### IDEA-005: Finger Movement Feedback
+
+Status: `Candidate`
+
+During the alarm challenge, draw a short translucent trail behind the user's finger. The trail
+should provide immediate visual confirmation that the app detected meaningful movement and that the
+movement is currently keeping the alarm quiet.
+
+UX direction:
+
+- Fade the trail after approximately 500-800 milliseconds.
+- Make meaningful movement produce a clearer or longer trail.
+- Make tiny movements produce little or no trail so the visual feedback matches the anti-cheating
+  movement threshold.
+- Remove the trail when movement stops.
+- Keep it translucent and short enough that it does not obscure the book text.
+- Consider a small progress ring around the touch point to show whether enough movement has been
+  accumulated for the current timer tick.
+- Return the alarm sound gradually when valid movement stops.
+
+Related ideas:
+
+- IDEA-004: Explain The Alarm Challenge Contract
+
 ## Idea Template
 
 ```markdown
