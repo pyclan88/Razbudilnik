@@ -291,20 +291,16 @@ Decision:
 Do not interrupt PR 12. Fix automatic AlarmActivity entry in a dedicated bug-fix step.
 ```
 
-## Unfinished Debug Preview Experiment
+## Deferred Debug Preview Idea
 
 The user wants:
 
 - a quick way to open the reader without scheduling an alarm;
 - later, a debug-only challenge bypass for faster reader testing.
 
-Current experiment:
-
-- `buildConfig = true` is enabled in `app/build.gradle.kts`;
-- `ReaderPreviewActivity.kt` currently exists under `app/src/main`;
-- the activity is not declared in the main manifest;
-- no debug manifest currently exists;
-- the preview therefore cannot be opened.
+An unfinished experiment briefly added `ReaderPreviewActivity` under `src/main` and enabled
+`buildConfig`. Both changes were removed before the session ended because they did not belong in
+PR 12.
 
 Important source-set explanation:
 
@@ -313,14 +309,13 @@ Important source-set explanation:
 - a debug manifest supplements the main manifest through manifest merging;
 - `src/main` cannot directly reference a class that exists only under `src/debug`.
 
-Branch-scope decision remains open:
+Decision:
 
-1. Recommended: remove the unfinished preview experiment from PR 12 and implement debug reader
-   tools in a dedicated small branch.
-2. Alternative: keep it in PR 12, but move the activity and its manifest declaration under
-   `src/debug` so release builds omit them.
-
-Do not continue preview implementation until the user chooses.
+```text
+Keep PR 12 focused on bundled content. Implement debug reader tools later in a dedicated small
+branch. When implemented, keep both the preview activity and its manifest declaration under
+src/debug so release builds omit them.
+```
 
 ## Next Session
 
@@ -336,19 +331,15 @@ Then:
 
 1. Read all startup Markdown files.
 2. Review the current PR 12 source without inspecting the staging state.
-3. Ask the user to choose whether the debug preview belongs in PR 12.
-4. Recommended cleanup if it does not:
-    - remove `ReaderPreviewActivity.kt`;
-    - remove `buildConfig = true` if no remaining code uses `BuildConfig`.
-5. Review and commit asynchronous loading separately from the pagination fix.
-6. Run:
+3. Review and commit asynchronous loading separately from the pagination fix.
+4. Run:
 
    ```powershell
    .\gradlew.bat testDebugUnitTest assembleDebug
    ```
 
-7. Perform one final physical-device smoke test of the corrected first page and alarm challenge.
-8. Finish PR 12 before PiP, persistent progress, imported books, or reader design work.
+5. Perform one final physical-device smoke test of the corrected first page and alarm challenge.
+6. Finish PR 12 before PiP, persistent progress, imported books, or reader design work.
 
 ## Planned Follow-Up
 
