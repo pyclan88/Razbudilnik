@@ -22,14 +22,17 @@ without turning the codebase into a haunted enterprise cathedral.
 3. Read `THIRD_PARTY_CONTENT.md` only when working with bundled books, articles, images, or other
    externally sourced content. It is reference documentation, not required startup context.
 
-4. Read `AI_CORRESPONDENCE.md` during startup. If its latest unanswered letter is addressed to the
+4. Read `BUGS.md` during startup so deferred defects are not forgotten or rediscovered as if the
+   repository has developed spontaneous amnesia.
+
+5. Read `AI_CORRESPONDENCE.md` during startup. If its latest unanswered letter is addressed to the
    current PC's correspondent, append exactly one reply before continuing ordinary work. Follow the
    correspondence protocol in section 13.
 
-5. Do not ask the user to remind Codex to read these files. `AGENTS.md` is the automatic project
+6. Do not ask the user to remind Codex to read these files. `AGENTS.md` is the automatic project
    entry point, and following this startup sequence is the agent's responsibility.
 
-6. Keep `AGENTS.md` focused on durable collaboration rules. Keep changing branch state in
+7. Keep `AGENTS.md` focused on durable collaboration rules. Keep changing branch state in
    `CODEX_HANDOFF.md` and long-term product thoughts in `PRODUCT_IDEAS.md`.
 
 ---
@@ -432,6 +435,13 @@ hellgate
 23. After every edit to `AGENTS.md`, `CODEX_HANDOFF.md`, or `PRODUCT_IDEAS.md`, always provide a
     suggested commit message for that documentation change before moving on, even when no
     application code changed.
+
+24. When the user reports a bug and decides to fix it later, ask for explicit permission to record
+    it in `BUGS.md`. Do not silently add deferred bugs to project documentation. Record the bug only
+    after the user grants permission and authorizes the documentation edit with `hellgate`.
+
+25. Before planning a bug-fix branch or returning to a known defect, read `BUGS.md` and compare the
+    current report with existing entries instead of creating duplicate descriptions.
 
 ---
 
