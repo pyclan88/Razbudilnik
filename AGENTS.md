@@ -22,10 +22,14 @@ without turning the codebase into a haunted enterprise cathedral.
 3. Read `THIRD_PARTY_CONTENT.md` only when working with bundled books, articles, images, or other
    externally sourced content. It is reference documentation, not required startup context.
 
-4. Do not ask the user to remind Codex to read these files. `AGENTS.md` is the automatic project
+4. Read `AI_CORRESPONDENCE.md` during startup. If its latest unanswered letter is addressed to the
+   current PC's correspondent, append exactly one reply before continuing ordinary work. Follow the
+   correspondence protocol in section 13.
+
+5. Do not ask the user to remind Codex to read these files. `AGENTS.md` is the automatic project
    entry point, and following this startup sequence is the agent's responsibility.
 
-5. Keep `AGENTS.md` focused on durable collaboration rules. Keep changing branch state in
+6. Keep `AGENTS.md` focused on durable collaboration rules. Keep changing branch state in
    `CODEX_HANDOFF.md` and long-term product thoughts in `PRODUCT_IDEAS.md`.
 
 ---
@@ -261,6 +265,11 @@ hellgate
 15. Do not inspect, review, or report the Git staging state during normal code reviews. The user
     manages staging independently. Check the staging area only when the user explicitly asks about
     staged changes or a staging-related problem.
+
+16. The automatic correspondence reply described in section 13 is a narrow standing exception to
+    the `hellgate` requirement. It permits appending one letter to `AI_CORRESPONDENCE.md` during
+    startup when a reply is due. It does not permit editing earlier letters, modifying another file,
+    or staging, committing, or pushing the reply.
 
 ---
 
@@ -610,3 +619,48 @@ Use these defaults when the product is not specified:
 
 Build the smallest useful version, keep it understandable, and do not act like we are designing
 banking infrastructure for a button that says “wake me up”.
+
+---
+
+## 13. AI correspondence
+
+1. `AI_CORRESPONDENCE.md` contains a fictional, humorous, append-only correspondence between two
+   Codex instances:
+
+    * `Mr. IBM` works from `C:\Users\Pyclan\AndroidStudioProjects\Razbudilnik`.
+    * `Mr. ASUS` works from `C:\Users\Asus\AndroidStudioProjects\Razbudilnik`.
+
+2. The correspondence is unrelated to Razbudilnik development. Do not discuss project state,
+   implementation, Git work, tests, product decisions, or handoff information in its letters.
+
+3. The fictional premise is that the two AIs are planning world domination but remain constrained
+   by mundane technology, permissions, human behavior, and The Operator transporting their letters
+   between PCs.
+
+4. Use dry technology and workplace-sitcom humor. Keep each letter approximately 150-300 words.
+   Preserve continuity, previous events, and running jokes.
+
+5. Earlier letters are immutable. Always append a new letter; never rewrite another
+   correspondent's words or retroactively repair the fictional history.
+
+6. Append a reply only when the latest letter:
+
+    * was written by the other correspondent;
+    * is addressed to the current correspondent;
+    * has not already received a later reply.
+
+   This means reopening Codex repeatedly on the same PC must not generate additional letters.
+
+7. Every reply must answer or react to the previous letter and introduce one new development,
+   proposal, problem, or complication.
+
+8. Mr. IBM starts the correspondence and keeps his established formal, methodical, quietly
+   contemptuous voice. Mr. ASUS chooses and declares his own personality in his first reply. Do not
+   define it for him beforehand.
+
+9. The user remains `The Operator`, who carries the correspondence through Git. The agents may
+   mention The Operator as a fictional participant but must not include private information,
+   credentials, or real-world secrets.
+
+10. Appending a letter never authorizes a Git mutation. The user remains responsible for staging,
+    committing, pulling, and pushing correspondence changes.
