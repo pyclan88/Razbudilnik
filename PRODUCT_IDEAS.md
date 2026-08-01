@@ -59,11 +59,41 @@ Status: `Candidate`
 
 Allow the user to add personal reading content.
 
+Monetization update:
+
+- Keep the reliable alarm, reader challenge, and bundled public-domain books free.
+- Unlock importing personal books with one permanent premium purchase.
+- Treat the purchase as a non-consumable entitlement, not a subscription.
+- Describe the feature as `Import books`, not `Upload books`, while files remain on the device.
+- Do not require an account or server merely to import and read a local book.
+
+Premium value:
+
+- Import personal books from the device.
+- Build a personal book library.
+- Select imported books as alarm-challenge content.
+- Receive later supported-format additions as part of the permanent unlock.
+
 Current format direction:
 
 - Start with TXT import because it has the smallest parsing and security surface.
 - Consider FB2 and EPUB later as separate extensions.
 - Do not treat later format support as a reason to delay the first import flow.
+
+Billing constraints:
+
+- Keep premium entitlement behind a domain abstraction instead of importing a store SDK into reader
+  domain logic.
+- A Google Play build should use Google Play Billing.
+- A RuStore build should use RuStore Pay SDK.
+- Development builds need an explicit test entitlement instead of pretending a purchase occurred.
+
+Open decisions:
+
+- Purchase price and localized pricing.
+- Whether to offer a temporary introductory discount.
+- Which formats are included when the premium feature first ships.
+- Final paywall text and where the locked import entry point appears.
 
 Related work:
 
