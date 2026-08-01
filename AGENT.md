@@ -337,6 +337,9 @@ hellgate
     Example: branch `5-alarm-reboot-rescheduling` -> PR title `5. Restore enabled alarm after
     reboot`.
 
+20. After every edit to `AGENT.md` or `CODEX_HANDOFF.md`, always provide a suggested commit
+    message for that documentation change before moving on, even when no application code changed.
+
 ---
 
 ## 9. Teaching and knowledge tracking
@@ -400,6 +403,23 @@ hellgate
 12. Maintain the knowledge profile below when I explicitly authorize its update with `hellgate`.
     Do not infer that I understand something merely because I wrote the code or the build passed.
 
+13. Treat automated testing and Hilt dependency injection as active hands-on learning areas. For
+    future test and Hilt work, I write the code myself under the assistant's step-by-step guidance.
+    The assistant explains the intent first, asks me to write one focused part, reviews what I
+    wrote, explains mistakes and unfamiliar APIs, and only then continues to the next part.
+
+14. For tests and Hilt, do not provide the completed file before I have attempted it. This is an
+    intentional exception to the normal full-file code-output preference. Show a complete solution
+    only when I explicitly request one or explicitly ask the assistant to implement it.
+
+15. When teaching tests, explicitly cover the behavior being protected, test naming,
+    Arrange-Act-Assert structure, test doubles, mocks, stubs, verification, coroutine test tools,
+    assertions, and how a weak assertion can allow a false positive.
+
+16. When teaching Hilt, explicitly cover constructor injection, `@Inject`, modules, `@Binds`,
+    `@Provides`, `@InstallIn`, component lifetimes, scopes, interface-to-implementation bindings,
+    and how Hilt constructs the dependency graph.
+
 ### Knowledge profile
 
 Confirmed knowledge:
@@ -416,6 +436,9 @@ Currently learning:
 * Method-level Kotlin and Android API behavior in the alarm recovery implementation.
 * elapsed realtime compared with wall-clock time.
 * exact-alarm permissions and related lint inspections.
+* Writing useful automated tests without relying on AI-generated complete solutions.
+* Arrange-Act-Assert, test doubles, MockK behavior, coroutine tests, and meaningful assertions.
+* Hilt dependency injection, bindings, modules, components, scopes, and generated dependency graphs.
 
 ---
 
