@@ -160,6 +160,50 @@ Related ideas:
 
 - IDEA-004: Explain The Alarm Challenge Contract
 
+### IDEA-006: Pastel Green Visual Theme
+
+Status: `Candidate`
+
+Use muted pastel-green shades as the app's main visual identity in both light and dark themes.
+Green should be the brand and successful-interaction color rather than the only color used
+throughout the interface.
+
+Semantic color direction:
+
+- Green represents valid movement, a quiet alarm, completed reading progress, and selected states.
+- Amber represents movement stopping and the alarm sound beginning to return.
+- Red or coral represents an actively sounding alarm, errors, and missing required access.
+- Neutral gray backgrounds and surfaces keep text readable and prevent the interface from becoming
+  monochromatic.
+
+Initial palette proposal:
+
+| Role                    | Light theme | Dark theme |
+|-------------------------|-------------|------------|
+| Background              | `#F6F8F6`   | `#101512`  |
+| Surface                 | `#FFFFFF`   | `#181E1A`  |
+| Primary                 | `#326B4C`   | `#9BD3AC`  |
+| Primary container       | `#CDE8D5`   | `#254F37`  |
+| Main text               | `#18211B`   | `#E3EAE4`  |
+| Secondary text          | `#566159`   | `#B8C2BA`  |
+| Outline                 | `#AEB8B0`   | `#849087`  |
+| Warning                 | `#A66000`   | `#FFB95C`  |
+| Error or sounding alarm | `#B3261E`   | `#FFB4AB`  |
+
+Finger-trail proposal:
+
+- Light theme trail: `#42A66B`.
+- Dark theme trail: `#7FE7A3`.
+- Keep the trail translucent and short-lived so it confirms movement without covering the text.
+
+The exact color values remain proposals until the main screens and alarm challenge are designed and
+checked for contrast in both themes.
+
+Related ideas:
+
+- IDEA-004: Explain The Alarm Challenge Contract
+- IDEA-005: Finger Movement Feedback
+
 ## Idea Template
 
 ```markdown
