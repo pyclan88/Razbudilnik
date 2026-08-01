@@ -426,7 +426,7 @@ hellgate
 * tell me what to test,
 * ask for or note the test result,
 * provide commit comments/message suggestions,
-* and state the next commit-step.
+* and state the next commit-step without starting it until the commit gate passes.
 
 22. When suggesting a PR title, include the branch's ordinal number at the beginning of the title.
     Example: branch `5-alarm-reboot-rescheduling` -> PR title `5. Restore enabled alarm after
@@ -442,6 +442,18 @@ hellgate
 
 25. Before planning a bug-fix branch or returning to a known defect, read `BUGS.md` and compare the
     current report with existing entries instead of creating duplicate descriptions.
+
+26. After a commit-step passes its required checks, stop at a mandatory commit gate:
+
+* compare the working source with `HEAD` without inspecting or reporting the staging state,
+* identify the exact files that belong to the completed logical change,
+* provide the exact suggested commit message,
+* wait until the user confirms that the commit is complete or explicitly says to defer it,
+* and only then begin editing for the next commit-step.
+
+When the user says `next`, first verify that the previous commit gate was resolved. Do not interpret
+`next` as permission to accumulate another implementation step on top of verified but uncommitted
+work.
 
 ---
 

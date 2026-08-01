@@ -15,6 +15,8 @@ Important rules:
   API/syntax levels.
 - Work one logical commit-step at a time.
 - End code steps with review, verification, a commit message, and the next step.
+- Do not start the next implementation step until the user confirms the previous commit or
+  explicitly defers it.
 - PR titles begin with the branch ordinal number.
 
 Also read:
@@ -331,15 +333,17 @@ Then:
 
 1. Read all startup Markdown files.
 2. Review the current PR 12 source without inspecting the staging state.
-3. Review and commit asynchronous loading separately from the pagination fix.
-4. Run:
+3. Commit asynchronous loading and wait for the user to confirm that commit before touching the
+   pagination change.
+4. Review and commit the pagination regression fix as its own commit.
+5. Run:
 
    ```powershell
    .\gradlew.bat testDebugUnitTest assembleDebug
    ```
 
-5. Perform one final physical-device smoke test of the corrected first page and alarm challenge.
-6. Finish PR 12 before PiP, persistent progress, imported books, or reader design work.
+6. Perform one final physical-device smoke test of the corrected first page and alarm challenge.
+7. Finish PR 12 before PiP, persistent progress, imported books, or reader design work.
 
 ## Planned Follow-Up
 
