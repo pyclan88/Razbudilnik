@@ -218,6 +218,62 @@ Related ideas:
 - IDEA-004: Explain The Alarm Challenge Contract
 - IDEA-005: Finger Movement Feedback
 
+### IDEA-007: Reader-First Product With Premium Alarm Challenges
+
+Status: `Candidate`
+
+Position Razbudilnik as a reader with a distinctive wake-up alarm rather than as an alarm app that
+temporarily displays book pages.
+
+Reader behavior:
+
+- Let the user open the reader without starting an alarm.
+- Let the user continue reading after completing and dismissing an alarm challenge.
+- Persist normal reading progress so the reader is useful during the day.
+- Let the user import personal books for ordinary reading without requiring premium.
+
+Alarm-challenge monetization:
+
+- Keep bundled public-domain books available for free alarm challenges.
+- Require permanent premium entitlement to select personally imported books as alarm-challenge
+  content.
+- Describe the premium value as `Use your books for wake-up challenges`, not as payment for access
+  to the user's own files.
+- Keep imported books readable outside alarm challenges even when premium is not owned.
+
+Product-positioning direction:
+
+- The main product promise remains waking up by reading; do not market the application as a generic
+  replacement for mature ebook readers before its reading experience can support that claim.
+- Free reading gives users a reason to return between alarms and makes challenge reading continue
+  naturally instead of ending at dismissal.
+- The alarm challenge remains the differentiating feature rather than becoming a settings panel
+  attached to an undistinguished reader.
+
+Alternative to preserve:
+
+- IDEA-003 currently proposes one free personal-book import followed by a permanent premium import
+  unlock.
+- This reader-first model instead makes importing and ordinary reading free, while premium controls
+  whether imported content may be selected for alarm challenges.
+- Do not implement both models simultaneously. Choose one monetization boundary before building
+  import entitlement logic.
+
+Open decisions:
+
+- Whether one imported book may be used in an alarm challenge for free before premium is required.
+- Whether the initial application navigation should lead with the library or with the next alarm.
+- How much ordinary-reader functionality belongs in the MVP before reader-first positioning is
+  credible.
+- Whether the product name and store description should use `reader alarm`, `wake-up reader`, or
+  another category phrase.
+
+Related ideas:
+
+- IDEA-002: Persist Active Reader Progress
+- IDEA-003: User-Imported Books
+- IDEA-004: Explain The Alarm Challenge Contract
+
 ## Idea Template
 
 ```markdown
