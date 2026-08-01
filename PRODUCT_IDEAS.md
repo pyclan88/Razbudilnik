@@ -62,12 +62,26 @@ Allow the user to add personal reading content.
 Monetization update:
 
 - Keep the reliable alarm, reader challenge, and bundled public-domain books free.
-- Let every user import one personal book for free so they can test the complete import and alarm
-  challenge flow before purchasing.
+- Let every user import one personal book for free once so they can test the complete import and
+  alarm challenge flow before purchasing.
 - Unlock importing personal books with one permanent premium purchase.
 - Treat the purchase as a non-consumable entitlement, not a subscription.
 - Describe the feature as `Import books`, not `Upload books`, while files remain on the device.
 - Do not require an account or server merely to import and read a local book.
+
+Free-import enforcement decision:
+
+- After the first successful personal-book import, persist `hasUsedFreeImport = true`.
+- Include only the free-import entitlement state in Android Auto Backup so Android may restore it
+  after reinstallation.
+- Exclude alarm-enabled state, active alarm sessions, scheduled-alarm state, and temporary reader
+  state from backup.
+- Treat Auto Backup as soft enforcement because backup may be delayed, disabled, unavailable on
+  some devices, or bypassed by changing accounts or reinstalling before a backup occurs.
+- Test backup and restore behavior on supported physical devices before relying on it.
+- Do not introduce a Razbudilnik account, backend, persistent phone identifier, or Play Integrity
+  Device Recall for the initial implementation.
+- Reconsider server-side enforcement only if real usage data later shows meaningful abuse.
 
 Alternative preserved:
 
