@@ -62,10 +62,18 @@ Allow the user to add personal reading content.
 Monetization update:
 
 - Keep the reliable alarm, reader challenge, and bundled public-domain books free.
+- Let every user import one personal book for free so they can test the complete import and alarm
+  challenge flow before purchasing.
 - Unlock importing personal books with one permanent premium purchase.
 - Treat the purchase as a non-consumable entitlement, not a subscription.
 - Describe the feature as `Import books`, not `Upload books`, while files remain on the device.
 - Do not require an account or server merely to import and read a local book.
+
+Alternative preserved:
+
+- Monthly import access at approximately 50 RUB was considered.
+- It is not currently selected because expiration would make access to the user's imported books
+  confusing, while a permanent unlock matches a local device capability more naturally.
 
 Premium value:
 
