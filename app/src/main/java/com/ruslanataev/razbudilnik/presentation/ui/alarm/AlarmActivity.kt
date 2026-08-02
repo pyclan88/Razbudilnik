@@ -1,6 +1,8 @@
 package com.ruslanataev.razbudilnik.presentation.ui.alarm
 
+import android.app.PictureInPictureParams
 import android.os.Bundle
+import android.util.Rational
 import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -17,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
 
 private val ALERT_NOTIFICATION_DISPLAY_DURATION = 2.seconds
+private val ALARM_PIP_ASPECT_RATIO = Rational(9, 16)
 
 @AndroidEntryPoint
 class AlarmActivity : ComponentActivity() {
@@ -29,6 +32,8 @@ class AlarmActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         prepareAlarmWindow()
+
+        preparePictureInPicture()
 
         setContent {
             RazbudilnikTheme {
@@ -100,6 +105,16 @@ class AlarmActivity : ComponentActivity() {
             WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
                     WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON,
         )
+    }
+
+    private fun preparePictureInPicture() {
+        val params = PictureInPictureParams.Builder()
+            .setAspectRatio(ALARM_PIP_ASPECT_RATIO)
+            .setAutoEnterEnabled(true)
+            .setSeamlessResizeEnabled(false)
+            .build()
+
+        setPictureInPictureParams(params)
     }
 
     private fun setAlarmMuted(isMuted: Boolean) {
