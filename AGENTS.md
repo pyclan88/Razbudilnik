@@ -508,8 +508,17 @@ work.
 10. Do not introduce several unexplained Android platform concepts in one step. Split the work when
     necessary so each commit-step teaches one coherent mechanism.
 
-11. At the end of each learning-heavy step, ask one or two short checkpoint questions about the new
-    concepts. Use my answers to distinguish between:
+11. Scale checkpoint questions to the amount, novelty, and difficulty of the code:
+
+* Ask no checkpoint questions for trivial code or concepts already recorded as understood.
+* Ask one short question after a coherent step that introduces one genuinely new concept.
+* Ask at most two questions only when a step introduces multiple difficult Android or Kotlin
+  concepts.
+* Ask checkpoint questions at the end of the coherent implementation step, not after every
+  explanatory reply within that step.
+* Do not repeat a question after I have demonstrated understanding.
+
+Use my answers to distinguish between:
 
 * concepts I understand,
 * concepts I partially understand,
