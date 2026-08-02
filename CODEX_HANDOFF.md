@@ -302,7 +302,7 @@ Implementation:
 
 Verification:
 
-- `testDebugUnitTest assembleDebug`: passed.
+- Final `.\gradlew.bat testDebugUnitTest assembleDebug`: passed in 20 seconds.
 - Final `assembleDebug` after the two-second delay: passed.
 - Foreground setup screen automatically opens the challenge.
 - Locked screen wakes and opens the challenge.
@@ -311,6 +311,17 @@ Verification:
 - The alerting notification transitions to the quiet ongoing notification.
 - Two seconds was selected on the physical Tecno Android 14 device after one second felt too abrupt.
 - Challenge completion still stops sound and removes the foreground notification.
+
+Residual risks accepted for PR 13:
+
+- Foreground event delivery and notification replacement are verified on a physical device but do
+  not yet have automated instrumentation coverage.
+- The two-second notification transition has been evaluated only on the Tecno Android 14 device;
+  animation timing and presentation may differ between OEMs.
+- `AlarmRuntimeEvents` is intentionally process-local and does not replay old events. Persisted
+  `AlarmSessionStore` state remains responsible for recovery after process death.
+- Add broader supported-Android-version and OEM testing later, when a repeatable device or emulator
+  test matrix exists. These are follow-up quality tasks, not blockers for this PR.
 
 ## Deferred Debug Preview Idea
 
