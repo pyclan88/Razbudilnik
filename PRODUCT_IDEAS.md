@@ -293,8 +293,10 @@ Constraints:
 Related work:
 
 - `CODEX_HANDOFF.md` records the related deferred debug reader preview activity.
-- Implement the bypass in a dedicated small developer-tooling branch rather than mixing it into an
-  unrelated product feature or bug fix.
+- Planned branch: `15-debug-challenge-bypass`.
+- Proposed PR title: `15. Add a debug-only challenge bypass`.
+- Implement the bypass after the Picture-in-Picture branch rather than mixing it into that product
+  feature or another unrelated change.
 
 ## Idea Template
 

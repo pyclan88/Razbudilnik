@@ -402,6 +402,20 @@ Its goal is to provide a compact return surface when an active challenge is mini
 stop or complete the alarm. See `PRODUCT_IDEAS.md` for the full product direction and open
 monetization alternatives.
 
+The next dedicated developer-tooling branch after PR 14 is:
+
+```text
+15-debug-challenge-bypass
+```
+
+Proposed title:
+
+```text
+15. Add a debug-only challenge bypass
+```
+
+The bypass must exist only in debug builds and must invoke the real challenge-completion path.
+
 Likely later sequence:
 
 ```text
