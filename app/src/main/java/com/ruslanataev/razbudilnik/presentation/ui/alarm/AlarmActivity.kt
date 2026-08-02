@@ -35,6 +35,12 @@ class AlarmActivity : ComponentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+
+        startService(AlarmRingingService.createAlarmUiVisibleIntent(this))
+    }
+
     override fun onPause() {
         if (!isAlarmStopping) {
             setAlarmMuted(false)

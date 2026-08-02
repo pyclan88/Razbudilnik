@@ -55,8 +55,10 @@ class AlarmRingingService : Service() {
         when (intent?.action) {
             ACTION_START -> startAlarm(
                 hour = intent.getIntExtra(EXTRA_HOUR, 7),
-                minute = intent.getIntExtra(EXTRA_MINUTE, 0)
+                minute = intent.getIntExtra(EXTRA_MINUTE, 0),
             )
+
+            ACTION_ALARM_UI_VISIBLE -> showActiveAlarmNotification()
 
             ACTION_MUTE -> setAlarmMuted(true)
             ACTION_RESUME -> setAlarmMuted(false)
@@ -92,7 +94,7 @@ class AlarmRingingService : Service() {
         startForeground(
             AlarmNotificationHelper.NOTIFICATION_ID_ALARM,
             notification,
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
         )
 
         alarmSessionStore.saveActiveSession(
@@ -126,6 +128,26 @@ class AlarmRingingService : Service() {
 
         fadeToVolume(
             targetVolume = if (isAlarmMuted) MUTED_VOLUME else AUDIBLE_VOLUME,
+        )
+    }
+
+    private fun showActiveAlarmNotification() {
+        val activeSession = alarmSessionStore.getActiveSession()
+
+        if (activeSession == null) {
+            stopSelf()
+            return
+        }
+
+        val notification = AlarmNotificationHelper(this).createActiveAlarmNotification(
+            hour = activeSession.hour,
+            minute = activeSession.minute,
+        )
+
+        startForeground(
+            AlarmNotificationHelper.NOTIFICATION_ID_ALARM,
+            notification,
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
         )
     }
 
@@ -268,6 +290,8 @@ class AlarmRingingService : Service() {
 
     companion object {
         private const val ACTION_START = "com.ruslanataev.razbudilnik.action.START_ALARM"
+        private const val ACTION_ALARM_UI_VISIBLE =
+            "com.ruslanataev.razbudilnik.action.ALARM_UI_VISIBLE"
         private const val ACTION_MUTE = "com.ruslanataev.razbudilnik.action.MUTE_ALARM"
         private const val ACTION_RESUME = "com.ruslanataev.razbudilnik.action.RESUME_ALARM"
         private const val ACTION_STOP = "com.ruslanataev.razbudilnik.action.STOP_ALARM"
@@ -286,6 +310,11 @@ class AlarmRingingService : Service() {
                 action = ACTION_START
                 putExtra(EXTRA_HOUR, hour)
                 putExtra(EXTRA_MINUTE, minute)
+            }
+
+        fun createAlarmUiVisibleIntent(context: Context) =
+            Intent(context, AlarmRingingService::class.java).apply {
+                action = ACTION_ALARM_UI_VISIBLE
             }
 
         fun createMuteIntent(context: Context) =
