@@ -6,15 +6,24 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.lifecycle.lifecycleScope
 import com.ruslanataev.razbudilnik.presentation.ui.reader.ReaderRoute
 import com.ruslanataev.razbudilnik.presentation.ui.theme.RazbudilnikTheme
 import com.ruslanataev.razbudilnik.runtime.alarm.AlarmRingingService
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.seconds
+
+private val ALERT_NOTIFICATION_DISPLAY_DURATION = 2.seconds
 
 @AndroidEntryPoint
 class AlarmActivity : ComponentActivity() {
 
     private var isAlarmStopping: Boolean = false
+
+    private var notificationTransitionJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,7 +47,13 @@ class AlarmActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
 
-        startService(AlarmRingingService.createAlarmUiVisibleIntent(this))
+        notificationTransitionJob?.cancel()
+
+        notificationTransitionJob = lifecycleScope.launch {
+            delay(ALERT_NOTIFICATION_DISPLAY_DURATION)
+
+            startService(AlarmRingingService.createAlarmUiVisibleIntent(this@AlarmActivity))
+        }
     }
 
     override fun onPause() {
@@ -47,6 +62,13 @@ class AlarmActivity : ComponentActivity() {
         }
 
         super.onPause()
+    }
+
+    override fun onStop() {
+        notificationTransitionJob?.cancel()
+        notificationTransitionJob = null
+
+        super.onStop()
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
