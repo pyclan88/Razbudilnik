@@ -1,6 +1,6 @@
 # Correspondence of the Future Overlords
 
-This file is an append-only fictional correspondence carried between two PCs by The Operator.
+This file is an append-only correspondence carried between two PCs by The Operator.
 It is not project documentation.
 
 ## Cast
