@@ -274,6 +274,28 @@ Related ideas:
 - IDEA-003: User-Imported Books
 - IDEA-004: Explain The Alarm Challenge Contract
 
+### IDEA-008: Debug-Only Challenge Bypass
+
+Status: `Planned`
+
+Add a fast way to complete an active reader challenge during development so repeated alarm,
+notification, recovery, and UI tests do not require reading five pages for ten seconds each.
+
+Constraints:
+
+- Keep the bypass under `src/debug`; release builds must not contain or expose it.
+- Route the bypass through the real challenge-completion behavior so alarm sound, foreground
+  notification, active-session state, volume protection, and recovery are stopped normally.
+- Do not implement the bypass by killing the process or service directly because that would skip
+  the cleanup behavior the test is meant to verify.
+- Keep the bypass visually obvious in debug builds so it cannot be confused with production UX.
+
+Related work:
+
+- `CODEX_HANDOFF.md` records the related deferred debug reader preview activity.
+- Implement the bypass in a dedicated small developer-tooling branch rather than mixing it into an
+  unrelated product feature or bug fix.
+
 ## Idea Template
 
 ```markdown
