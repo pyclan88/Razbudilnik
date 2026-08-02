@@ -38,7 +38,7 @@ Constraints:
 
 Related work:
 
-- Planned branch `13-alarm-challenge-pip-return`.
+- Planned branch `14-alarm-challenge-pip-return`.
 - Detailed implementation scope is maintained in `CODEX_HANDOFF.md`.
 
 ### IDEA-002: Persist Active Reader Progress

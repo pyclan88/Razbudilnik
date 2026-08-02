@@ -31,19 +31,19 @@ Also read:
 Current-PC path:
 
 ```text
-C:\Users\Pyclan\AndroidStudioProjects\Razbudilnik
+C:\Users\Asus\AndroidStudioProjects\Razbudilnik
 ```
 
 Other-PC path:
 
 ```text
-C:\Users\Asus\AndroidStudioProjects\Razbudilnik
+C:\Users\Pyclan\AndroidStudioProjects\Razbudilnik
 ```
 
 Current branch:
 
 ```text
-12-bundled-book-content
+13-foreground-alarm-entry
 ```
 
 Base branch:
@@ -55,20 +55,17 @@ master
 Relevant commits:
 
 ```text
-b4856fc docs: record reader-first product direction
-c075a78 docs: record deferred alarm-entry bug
-f9bda27 docs: require permission before tracking deferred bugs
-44b63af feat: load bundled reader book from assets
-1adba61 feat: add bundled public-domain reader text
-c11f75a feat: add reader book data contract
-9e87076 feat: add stable reader content models
-d58896b 11. Recover an active alarm after process death (#11)
+d6e59c9 docs: scale learning questions to code complexity
+f3d7b88 fix: open alarm challenge from foreground
+13c74ce docs: record debug-only challenge bypass
+37b1cad docs: define Kotlin argument wrapping style
+8b7372d fix: quiet alarm notification during challenge
+72ba4ac polish: delay alarm notification transition
+8848a46 12. Add bundled book content to reader challenges (#12)
 ```
 
-PR 11 is merged. PR 12 remains in progress.
-
-The working source contains additional PR 12 changes after `44b63af`. They passed the reported
-checks but still require final review and commit grouping.
+PR 12 is merged. PR 13 implementation and device testing are complete. Documentation updates and
+the final branch review remain before push and pull-request preparation.
 
 ## Android Configuration
 
@@ -277,21 +274,43 @@ Physical-device reader checks confirmed:
 The pagination regression is covered automatically. A final visual check of the corrected first
 page is still desirable.
 
-## Deferred Alarm Entry Bug
+## PR 13: Foreground Alarm Entry
 
-`BUGS.md` contains `BUG-001`.
+`BUGS.md` records `BUG-001` as fixed on branch `13-foreground-alarm-entry`.
 
-Observed:
+Cause:
 
-- the alarm sound and notification start;
-- the setup screen remains visible;
-- the reader opens only after tapping the notification.
+- Android intentionally uses a heads-up notification rather than forcing a full-screen intent over
+  an unlocked foreground application.
+- `MainActivity` previously checked active-session state only during creation and resume, so an
+  already-resumed setup screen did not react to a newly triggered alarm.
 
-Decision:
+Implementation:
 
-```text
-Do not interrupt PR 12. Fix automatic AlarmActivity entry in a dedicated bug-fix step.
-```
+- `AlarmRuntimeEvents` uses a process-local `SharedFlow` event with one extra buffer slot.
+- `AlarmReceiver` starts `AlarmRingingService` and emits the alarm-start event.
+- `MainActivity` collects while at least `Lifecycle.State.STARTED` and opens `AlarmActivity`.
+- Persisted `AlarmSessionStore` remains the source of truth after process death; the event is not
+  replayed.
+- The ringing service initially posts the high-importance alarm notification required for
+  full-screen entry and foreground execution.
+- `AlarmActivity.onStart()` waits two seconds, then tells the service that the challenge UI is
+  visible.
+- The service replaces the alerting notification with a low-importance ongoing notification using
+  the same notification ID.
+- The delayed transition job is cancelled in `AlarmActivity.onStop()`.
+
+Verification:
+
+- `testDebugUnitTest assembleDebug`: passed.
+- Final `assembleDebug` after the two-second delay: passed.
+- Foreground setup screen automatically opens the challenge.
+- Locked screen wakes and opens the challenge.
+- Unlocked background behavior keeps the Android heads-up notification and opens the challenge
+  when tapped.
+- The alerting notification transitions to the quiet ongoing notification.
+- Two seconds was selected on the physical Tecno Android 14 device after one second felt too abrupt.
+- Challenge completion still stops sound and removes the foreground notification.
 
 ## Deferred Debug Preview Idea
 
@@ -336,38 +355,36 @@ On the ASUS PC:
 
 ```powershell
 git fetch origin
-git switch 12-bundled-book-content
+git switch 13-foreground-alarm-entry
 git pull
 ```
 
 Then:
 
 1. Read all startup Markdown files.
-2. Review the current PR 12 source without inspecting the staging state.
-3. Commit asynchronous loading and wait for the user to confirm that commit before touching the
-   pagination change.
-4. Review and commit the pagination regression fix as its own commit.
-5. Run:
+2. Commit the PR 13 documentation update as its own logical step.
+3. Review the complete branch against `master` without inspecting the staging state.
+4. Run the final verification if source changed after the recorded checks:
 
    ```powershell
    .\gradlew.bat testDebugUnitTest assembleDebug
    ```
 
-6. Perform one final physical-device smoke test of the corrected first page and alarm challenge.
-7. Finish PR 12 before PiP, persistent progress, imported books, or reader design work.
+5. Push branch `13-foreground-alarm-entry` and prepare PR 13.
+6. After PR 13 is merged, start PiP only as branch 14.
 
 ## Planned Follow-Up
 
 The currently recorded next product branch is:
 
 ```text
-13-alarm-challenge-pip-return
+14-alarm-challenge-pip-return
 ```
 
 Proposed title:
 
 ```text
-13. Add Picture-in-Picture return to the active challenge
+14. Add Picture-in-Picture return to the active challenge
 ```
 
 Its goal is to provide a compact return surface when an active challenge is minimized. PiP must not
