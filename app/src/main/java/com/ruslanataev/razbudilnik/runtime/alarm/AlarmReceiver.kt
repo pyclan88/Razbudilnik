@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.UserManager
 import com.ruslanataev.razbudilnik.domain.alarm.usecases.RescheduleDirectBootAlarmUseCase
 import com.ruslanataev.razbudilnik.domain.alarm.usecases.RescheduleEnabledAlarmUseCase
+import com.ruslanataev.razbudilnik.runtime.alarm.events.AlarmRuntimeEvents
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,6 +37,8 @@ class AlarmReceiver : BroadcastReceiver() {
                 minute = minute,
             ),
         )
+
+        AlarmRuntimeEvents.notifyAlarmStarted()
 
         val pendingResult = goAsync()
 

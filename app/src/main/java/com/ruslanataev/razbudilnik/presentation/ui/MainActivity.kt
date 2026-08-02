@@ -9,12 +9,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.ruslanataev.razbudilnik.presentation.ui.alarm.AlarmActivity
 import com.ruslanataev.razbudilnik.presentation.ui.setup.SetupRoute
 import com.ruslanataev.razbudilnik.presentation.ui.theme.RazbudilnikTheme
 import com.ruslanataev.razbudilnik.runtime.alarm.AlarmRingingService
+import com.ruslanataev.razbudilnik.runtime.alarm.events.AlarmRuntimeEvents
 import com.ruslanataev.razbudilnik.runtime.alarm.session.AlarmSessionStore
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -25,6 +30,8 @@ class MainActivity : ComponentActivity() {
         if (openActiveAlarmIfNeeded()) {
             return
         }
+
+        observeAlarmRuntimeEvents()
 
         enableEdgeToEdge()
 
@@ -58,6 +65,22 @@ class MainActivity : ComponentActivity() {
             ),
         )
 
+        openAlarmActivity()
+
+        return true
+    }
+
+    private fun observeAlarmRuntimeEvents() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                AlarmRuntimeEvents.alarmStarted.collect {
+                    openAlarmActivity()
+                }
+            }
+        }
+    }
+
+    private fun openAlarmActivity() {
         val alarmActivityIntent = Intent(
             this,
             AlarmActivity::class.java,
@@ -66,9 +89,6 @@ class MainActivity : ComponentActivity() {
         }
 
         startActivity(alarmActivityIntent)
-
         finish()
-
-        return true
     }
 }
