@@ -628,6 +628,11 @@ Use these defaults when the product is not specified:
 9. Do not ignore Android lifecycle realities. The OS is not your friend. It is a bureaucrat with a
    battery-saver badge.
 
+10. Keep short function declarations and calls on one line when they fit within 100 characters. If
+    a declaration or call must wrap, place every parameter or argument on its own line and include
+    a trailing comma. Apply this convention to new code and to existing code whenever that area is
+    already being edited, but do not create unrelated repository-wide formatting changes.
+
 ---
 
 ## 12. What I value
