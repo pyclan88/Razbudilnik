@@ -1,5 +1,8 @@
 package com.ruslanataev.razbudilnik.presentation.ui.reader
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -7,6 +10,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -27,8 +31,21 @@ fun ReaderRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    LaunchedEffect(state.shouldMuteAlarm) {
-        if (state.shouldMuteAlarm) {
+    val currentState = state
+
+    if (currentState == null) {
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator()
+        }
+
+        return
+    }
+
+    LaunchedEffect(currentState.shouldMuteAlarm) {
+        if (currentState.shouldMuteAlarm) {
             onAlarmMuteChanged(true)
         } else {
             delay(ALARM_RESUME_GRACE_PERIOD)
@@ -58,7 +75,7 @@ fun ReaderRoute(
     }
 
     ReaderScreen(
-        state = state,
+        state = currentState,
         onReaderInteractionChanged = { fingerDown, movementDistancePx ->
             isFingerDown = fingerDown
             movementDistanceSinceLastTick += movementDistancePx
