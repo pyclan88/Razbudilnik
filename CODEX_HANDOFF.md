@@ -319,6 +319,17 @@ branch. When implemented, keep both the preview activity and its manifest declar
 src/debug so release builds omit them.
 ```
 
+## IBM PC Android Studio Reminder
+
+At the beginning of the next session on the IBM PC, remind the user to configure Android Studio
+consistently with the ASUS PC:
+
+1. Enable removing trailing spaces when files are saved.
+2. Enable ensuring that every saved file ends with a line break.
+
+This is currently an IDE configuration reminder. The repository does not yet contain an
+`.editorconfig` that enforces these rules automatically.
+
 ## Next Session
 
 On the ASUS PC:
