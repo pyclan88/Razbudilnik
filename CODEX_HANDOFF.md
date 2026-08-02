@@ -43,7 +43,7 @@ C:\Users\Pyclan\AndroidStudioProjects\Razbudilnik
 Current branch:
 
 ```text
-13-foreground-alarm-entry
+14-alarm-challenge-pip-return
 ```
 
 Base branch:
@@ -55,17 +55,14 @@ master
 Relevant commits:
 
 ```text
-d6e59c9 docs: scale learning questions to code complexity
-f3d7b88 fix: open alarm challenge from foreground
-13c74ce docs: record debug-only challenge bypass
-37b1cad docs: define Kotlin argument wrapping style
-8b7372d fix: quiet alarm notification during challenge
-72ba4ac polish: delay alarm notification transition
+efbcc1d feat: enable alarm challenge picture-in-picture
+29bc047 docs: plan debug challenge bypass branch
+b63447a 13. Open alarm challenge from foreground (#13)
 8848a46 12. Add bundled book content to reader challenges (#12)
 ```
 
-PR 12 is merged. PR 13 implementation and device testing are complete. Documentation updates and
-the final branch review remain before push and pull-request preparation.
+PR 13 is merged. PR 14 is active. Its first implementation commit is complete and tested on the
+physical Tecno Android 14 device. The branch has not been pushed yet.
 
 ## Android Configuration
 
@@ -323,6 +320,55 @@ Residual risks accepted for PR 13:
 - Add broader supported-Android-version and OEM testing later, when a repeatable device or emulator
   test matrix exists. These are follow-up quality tasks, not blockers for this PR.
 
+## PR 14: Picture-in-Picture Return
+
+Goal:
+
+- provide a compact return surface when an active challenge is minimized;
+- keep alarm sound, notification, active-session state, and completion behavior independent of PiP;
+- never let closing PiP stop or complete the alarm.
+
+Completed commit-step 1:
+
+- `AlarmActivity` declares PiP support in `AndroidManifest.xml`;
+- the required PiP `configChanges` prevent unnecessary activity recreation during resizing;
+- `AlarmActivity` configures `PictureInPictureParams` during `onCreate()`;
+- automatic PiP entry is enabled with `setAutoEnterEnabled(true)`;
+- seamless resizing is disabled because the reader is non-video Compose content;
+- the chosen portrait aspect ratio is `Rational(9, 16)`.
+
+Physical Tecno Android 14 verification:
+
+- pressing Home from the unlocked challenge enters PiP;
+- tapping PiP returns to the full challenge;
+- closing PiP removes only the floating activity surface;
+- alarm sound and the ongoing notification remain active after PiP closes;
+- tapping the notification restores the challenge.
+
+Accepted platform behavior:
+
+- merely opening the Recents overview does not enter PiP on the Tecno device;
+- Android may reject PiP while the keyguard is locked, even though `AlarmActivity` can be displayed
+  over the lock screen;
+- the ongoing notification remains the return path for Recents and locked-keyguard cases.
+
+Current visual limitation:
+
+- PiP currently shrinks and crops the complete reader UI because commit-step 2 has not been
+  implemented;
+- this is expected temporary behavior, not the intended final PiP design.
+
+Next commit-step:
+
+- add a dedicated compact Compose PiP surface;
+- track whether `AlarmActivity` is currently in PiP;
+- show the compact surface only in PiP and keep `ReaderRoute` for full-screen mode;
+- verify that expanding PiP restores the same challenge and that closing PiP leaves the alarm
+  active.
+
+Final branch verification has not been run yet. Run
+`.\gradlew.bat testDebugUnitTest assembleDebug` after the PiP UI step is complete.
+
 ## Deferred Debug Preview Idea
 
 The user wants:
@@ -362,29 +408,29 @@ This is currently an IDE configuration reminder. The repository does not yet con
 
 ## Next Session
 
-On the ASUS PC:
+Before leaving the ASUS PC:
+
+```powershell
+git push -u origin 14-alarm-challenge-pip-return
+```
+
+On the IBM PC:
 
 ```powershell
 git fetch origin
-git switch 13-foreground-alarm-entry
-git pull
+git switch 14-alarm-challenge-pip-return
+git pull --ff-only
 ```
 
 Then:
 
 1. Read all startup Markdown files.
-2. Commit the PR 13 documentation update as its own logical step.
-3. Review the complete branch against `master` without inspecting the staging state.
-4. Run the final verification if source changed after the recorded checks:
+2. Confirm that commit `efbcc1d` is present.
+3. Continue PR 14 with the dedicated compact Compose PiP surface.
+4. Keep PiP close behavior separate from alarm completion.
+5. Do not begin branch 15 until PR 14 is complete and merged.
 
-   ```powershell
-   .\gradlew.bat testDebugUnitTest assembleDebug
-   ```
-
-5. Push branch `13-foreground-alarm-entry` and prepare PR 13.
-6. After PR 13 is merged, start PiP only as branch 14.
-
-## Planned Follow-Up
+## Current PR And Planned Follow-Up
 
 The currently recorded next product branch is:
 
@@ -430,7 +476,8 @@ Add FB2/EPUB support
 - Bundled content currently consists of one public-domain Russian story.
 - User-imported books are not implemented.
 - Reader progress is not persisted.
-- Returning to a minimized active challenge still requires the launcher icon or notification.
+- PiP currently displays a cropped reader until the dedicated compact surface is implemented.
+- Recents and locked-keyguard exits still rely on the launcher or ongoing notification.
 - Required reading time remains `10.seconds` for smoke testing.
 - Movement uses finger motion on screen, not physical walking.
 - Reader UI is intentionally bare MVP.
