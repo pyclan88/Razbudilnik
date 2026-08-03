@@ -1,1 +1,4 @@
 /build
+
+# Locally generated signed APK output.
+/release
