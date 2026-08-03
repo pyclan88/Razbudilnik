@@ -1,6 +1,7 @@
 package com.ruslanataev.razbudilnik.presentation.ui.alarm
 
 import android.app.PictureInPictureParams
+import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Rational
 import android.view.KeyEvent
@@ -8,8 +9,14 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.ruslanataev.razbudilnik.presentation.ui.reader.ReaderRoute
+import com.ruslanataev.razbudilnik.presentation.ui.reader.viewmodel.ReaderViewModel
 import com.ruslanataev.razbudilnik.presentation.ui.theme.RazbudilnikTheme
 import com.ruslanataev.razbudilnik.runtime.alarm.AlarmRingingService
 import dagger.hilt.android.AndroidEntryPoint
@@ -24,6 +31,10 @@ private val ALARM_PIP_ASPECT_RATIO = Rational(9, 16)
 @AndroidEntryPoint
 class AlarmActivity : ComponentActivity() {
 
+    private val readerViewModel: ReaderViewModel by viewModels()
+
+    private var isAlarmInPictureInPictureMode: Boolean by mutableStateOf(false)
+
     private var isAlarmStopping: Boolean = false
 
     private var notificationTransitionJob: Job? = null
@@ -37,14 +48,22 @@ class AlarmActivity : ComponentActivity() {
 
         setContent {
             RazbudilnikTheme {
+                val readerState by readerViewModel.state.collectAsStateWithLifecycle()
+                val currentReaderState = readerState
+
                 BackHandler(enabled = true) {
                     // Only completing the reader challenge may dismiss the alarm.
                 }
 
-                ReaderRoute(
-                    onChallengeFinished = ::stopAlarm,
-                    onAlarmMuteChanged = ::setAlarmMuted,
-                )
+                if (isAlarmInPictureInPictureMode && currentReaderState != null) {
+                    AlarmPictureInPictureScreen(state = currentReaderState)
+                } else {
+                    ReaderRoute(
+                        onChallengeFinished = ::stopAlarm,
+                        onAlarmMuteChanged = ::setAlarmMuted,
+                        viewModel = readerViewModel,
+                    )
+                }
             }
         }
     }
@@ -89,6 +108,23 @@ class AlarmActivity : ComponentActivity() {
             true
         } else {
             super.onKeyUp(keyCode, event)
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration,
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+
+        isAlarmInPictureInPictureMode = isInPictureInPictureMode
+
+        if (isInPictureInPictureMode) {
+            readerViewModel.onReadingInteractionTick(
+                elapsedTime = 0.seconds,
+                isFingerDown = false,
+                isFingerMoving = false,
+            )
         }
     }
 
