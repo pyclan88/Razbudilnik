@@ -313,6 +313,9 @@ Related work:
 - Proposed PR title: `15. Add a debug-only challenge bypass`.
 - Implement the bypass after the Picture-in-Picture branch rather than mixing it into that product
   feature or another unrelated change.
+- Add a later `DEBUG: Trigger alarm` control that starts an alarm immediately through the real
+  receiver, ringing-service, notification, active-session, and reader-entry flow. Keep the control
+  under `src/debug` so release builds cannot contain or expose it.
 
 ### IDEA-009: English And Russian UI Localization
 
