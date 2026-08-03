@@ -78,6 +78,10 @@ fun ReaderScreen(
         ) {
             Text("Finish")
         }
+
+        BuildVariantChallengeControls(
+            onFinishChallenge = onFinishChallengeClick,
+        )
     }
 }
 
