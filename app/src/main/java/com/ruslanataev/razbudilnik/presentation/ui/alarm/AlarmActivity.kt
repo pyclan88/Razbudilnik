@@ -1,13 +1,22 @@
 package com.ruslanataev.razbudilnik.presentation.ui.alarm
 
+import android.app.PictureInPictureParams
+import android.content.res.Configuration
 import android.os.Bundle
+import android.util.Rational
 import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.ruslanataev.razbudilnik.presentation.ui.reader.ReaderRoute
+import com.ruslanataev.razbudilnik.presentation.ui.reader.viewmodel.ReaderViewModel
 import com.ruslanataev.razbudilnik.presentation.ui.theme.RazbudilnikTheme
 import com.ruslanataev.razbudilnik.runtime.alarm.AlarmRingingService
 import dagger.hilt.android.AndroidEntryPoint
@@ -17,9 +26,14 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
 
 private val ALERT_NOTIFICATION_DISPLAY_DURATION = 2.seconds
+private val ALARM_PIP_ASPECT_RATIO = Rational(9, 16)
 
 @AndroidEntryPoint
 class AlarmActivity : ComponentActivity() {
+
+    private val readerViewModel: ReaderViewModel by viewModels()
+
+    private var isAlarmInPictureInPictureMode: Boolean by mutableStateOf(false)
 
     private var isAlarmStopping: Boolean = false
 
@@ -30,16 +44,26 @@ class AlarmActivity : ComponentActivity() {
 
         prepareAlarmWindow()
 
+        preparePictureInPicture()
+
         setContent {
             RazbudilnikTheme {
+                val readerState by readerViewModel.state.collectAsStateWithLifecycle()
+                val currentReaderState = readerState
+
                 BackHandler(enabled = true) {
                     // Only completing the reader challenge may dismiss the alarm.
                 }
 
-                ReaderRoute(
-                    onChallengeFinished = ::stopAlarm,
-                    onAlarmMuteChanged = ::setAlarmMuted,
-                )
+                if (isAlarmInPictureInPictureMode && currentReaderState != null) {
+                    AlarmPictureInPictureScreen(state = currentReaderState)
+                } else {
+                    ReaderRoute(
+                        onChallengeFinished = ::stopAlarm,
+                        onAlarmMuteChanged = ::setAlarmMuted,
+                        viewModel = readerViewModel,
+                    )
+                }
             }
         }
     }
@@ -87,6 +111,23 @@ class AlarmActivity : ComponentActivity() {
         }
     }
 
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration,
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+
+        isAlarmInPictureInPictureMode = isInPictureInPictureMode
+
+        if (isInPictureInPictureMode) {
+            readerViewModel.onReadingInteractionTick(
+                elapsedTime = 0.seconds,
+                isFingerDown = false,
+                isFingerMoving = false,
+            )
+        }
+    }
+
     private fun Int.isAlarmSilencingKey(): Boolean {
         return this == KeyEvent.KEYCODE_VOLUME_DOWN ||
                 this == KeyEvent.KEYCODE_VOLUME_MUTE
@@ -100,6 +141,16 @@ class AlarmActivity : ComponentActivity() {
             WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
                     WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON,
         )
+    }
+
+    private fun preparePictureInPicture() {
+        val params = PictureInPictureParams.Builder()
+            .setAspectRatio(ALARM_PIP_ASPECT_RATIO)
+            .setAutoEnterEnabled(true)
+            .setSeamlessResizeEnabled(false)
+            .build()
+
+        setPictureInPictureParams(params)
     }
 
     private fun setAlarmMuted(isMuted: Boolean) {

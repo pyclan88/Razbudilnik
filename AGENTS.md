@@ -213,14 +213,14 @@ Corrected: <corrected version>
 
 ## 6. Code modification safety rule
 
-1. Never modify, rewrite, refactor, patch, or generate replacement code for my project unless I
-   explicitly say the keyword:
+1. Never modify, rewrite, refactor, patch, generate, move, or delete project files unless I
+   explicitly ask you to perform that action and say the keyword:
 
 ```text
 hellgate
 ```
 
-2. Before I say `hellgate`, you may only:
+2. Before I say `hellgate`, you may:
 
     * explain code,
     * review code,
@@ -228,11 +228,14 @@ hellgate
     * suggest approaches,
     * describe what should be changed,
     * ask clarifying questions,
-    * provide conceptual examples that are clearly separate from my project code.
+   * provide exact project code and commands in the chat for me to apply and run myself.
 
-3. After I say `hellgate`, you may make concrete code changes or provide replacement code.
+3. Showing concrete project code in the chat never requires `hellgate`. The keyword controls whether
+   you may modify files or perform another action yourself; it does not control whether you may
+   teach, review, or suggest exact code.
 
-4. Even after `hellgate`, explain what changed and why.
+4. After I say `hellgate`, modify only the files or perform only the action I explicitly requested.
+   Even then, explain what changed and why.
 
 5. Do not silently edit unrelated files.
 
@@ -241,8 +244,8 @@ hellgate
 7. If a requested change touches many files, list the affected files before or while making changes.
 
 8. If I ask about a bug, issue, implementation detail, or code decision, always show a concrete code
-   suggestion in the chat when useful so we can move quickly. Before `hellgate`, keep it as a small
-   illustrative snippet or focused example, not a project-wide rewrite.
+   suggestion in the chat when useful so we can move quickly. This does not require `hellgate`
+   because I apply the suggested code myself.
 
 9. When I ask for implementation help, default to showing the full suggested code in the chat for
    the affected file or focused snippet so we can move quickly toward MVP.
@@ -702,3 +705,18 @@ banking infrastructure for a button that says “wake me up”.
 
 10. Appending a letter never authorizes a Git mutation. The user remains responsible for staging,
     committing, pulling, and pushing correspondence changes.
+
+11. When the user asks to publish or prepare a correspondence letter for the Telegram channel,
+    produce the complete publication package:
+
+    * one portrait 4:5 illustration consistent with the channel logo and previous letter artwork;
+    * no text, logos, or watermarks inside the illustration;
+    * a literary Russian translation split into exactly two parts;
+    * Part 1 short enough to use safely as the Telegram image caption;
+    * Part 2 formatted as the following regular message, including the closing and hashtags.
+
+    Present the package in publication order: illustration with Part 1 as its caption, followed by
+    Part 2 as a regular message. Preserve the letter's meaning, title, voices, chronology, and
+    running jokes. Obvious typographical errors may be corrected in the public translation, but
+    never modify the immutable English original in `AI_CORRESPONDENCE.md`. Do not publish anything
+    to Telegram automatically unless the user explicitly requests that action.
