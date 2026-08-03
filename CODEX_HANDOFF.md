@@ -43,7 +43,7 @@ C:\Users\Asus\AndroidStudioProjects\Razbudilnik
 Current branch:
 
 ```text
-14-alarm-challenge-pip-return
+15-debug-challenge-bypass
 ```
 
 Base branch:
@@ -55,16 +55,15 @@ master
 Relevant commits:
 
 ```text
-79440aa feat: show reader challenge in picture-in-picture
-efbcc1d feat: enable alarm challenge picture-in-picture
-29bc047 docs: plan debug challenge bypass branch
-b63447a 13. Open alarm challenge from foreground (#13)
-8848a46 12. Add bundled book content to reader challenges (#12)
+30dee8a chore: ignore generated release artifacts
+4920ac5 docs: record instant debug alarm trigger idea
+9ee125c feat: add debug reader preview
+8652142 feat: add debug challenge bypass control
+c052ef4 14. Add Picture-in-Picture return to the active challenge (#14)
 ```
 
-PR 13 is merged. PR 14 is implemented and verified on the physical Tecno Android 14 device. The
-local branch contains unpushed commits and must be pushed before opening or updating its pull
-request.
+PR 14 is merged. PR 15 is implemented and verified in debug and locally signed release builds on
+the physical Tecno Android 14 device. The branch is ready to push and open as a pull request.
 
 ## Android Configuration
 
@@ -395,33 +394,73 @@ Out of scope for PR 14:
 Those behaviors remain recorded in `PRODUCT_IDEAS.md` and should be implemented in a dedicated
 reader-feedback branch rather than expanding the PiP return PR.
 
-PR 14 is ready to push and open as a pull request. Do not begin branch 15 until PR 14 is merged.
+PR 14 was merged as `c052ef4`.
 
-## Deferred Debug Preview Idea
+## PR 15: Debug Challenge Tools
 
-The user wants:
+Goal:
 
-- a quick way to open the reader without scheduling an alarm;
-- later, a debug-only challenge bypass for faster reader testing.
+- make repeated reader and alarm testing faster;
+- keep every developer-only control absent from release builds;
+- preserve the real challenge-completion cleanup path.
 
-An unfinished experiment briefly added `ReaderPreviewActivity` under `src/main` and enabled
-`buildConfig`. Both changes were removed before the session ended because they did not belong in
-PR 12.
+Completed commit `8652142`:
 
-Important source-set explanation:
+- debug builds show `DEBUG: Finish challenge` inside `ReaderScreen`;
+- the button invokes the same `onFinishChallengeClick` callback as normal completion;
+- real completion still stops alarm sound, foreground notification, active-session state, and
+  recovery;
+- release builds substitute a no-op `BuildVariantChallengeControls` implementation.
 
-- `src/main` is included in debug and release builds;
-- `src/debug` is included only in debug builds;
-- a debug manifest supplements the main manifest through manifest merging;
-- `src/main` cannot directly reference a class that exists only under `src/debug`.
+Completed commit `9ee125c`:
 
-Decision:
+- debug builds show `DEBUG: Open reader` on the setup screen;
+- `ReaderPreviewActivity` opens the real `ReaderRoute` without scheduling or starting an alarm;
+- completing the preview closes only the preview activity;
+- the activity and its manifest declaration both live under `src/debug`;
+- release builds substitute a no-op `BuildVariantSetupControls` implementation.
+
+Source-set behavior:
+
+- debug compiles `src/main` plus `src/debug`;
+- release compiles `src/main` plus `src/release`;
+- mutually exclusive source sets provide functions with the same names;
+- the debug manifest is merged only into the debug application;
+- the release manifest never references `ReaderPreviewActivity`.
+
+Completed documentation and hygiene commits:
+
+- `4920ac5` records a later `DEBUG: Trigger alarm` control in `PRODUCT_IDEAS.md`;
+- `30dee8a` ignores Android Studio's locally generated signed APK output under `app/release`.
+
+Automated verification:
 
 ```text
-Keep PR 12 focused on bundled content. Implement debug reader tools later in a dedicated small
-branch. When implemented, keep both the preview activity and its manifest declaration under
-src/debug so release builds omit them.
+.\gradlew.bat assembleDebug assembleRelease
+BUILD SUCCESSFUL in 7s
 ```
+
+Debug-device verification:
+
+- `DEBUG: Open reader` opens the real reader without an alarm;
+- `DEBUG: Finish challenge` completes a real ringing challenge through normal cleanup;
+- sound stops, the notification disappears, the activity closes, and recovery does not restart
+  the alarm.
+
+Locally signed release verification:
+
+- the release setup screen contains no `DEBUG: Open reader` control;
+- the release reader contains no `DEBUG: Finish challenge` control;
+- the normal release alarm still rings and opens the reader;
+- the release APK was signed with the existing debug keystore only for local device verification,
+  not for publication.
+
+Deferred developer tool:
+
+- add `DEBUG: Trigger alarm` later;
+- it must invoke the real receiver, ringing service, notification, active-session, and reader-entry
+  flow immediately;
+- it must remain under `src/debug` and absent from release builds.
 
 ## IBM PC Android Studio Reminder
 
@@ -436,34 +475,18 @@ This is currently an IDE configuration reminder. The repository does not yet con
 
 ## Next Session
 
-Finish PR 14:
+Finish PR 15:
 
 1. Commit this handoff update.
-2. Push `14-alarm-challenge-pip-return`.
-3. Open or update PR 14.
-4. Merge PR 14 after its checks pass.
+2. Push `15-debug-challenge-bypass`.
+3. Open PR 15.
+4. Merge PR 15 after its checks pass.
 5. Synchronize `master`.
-6. Create branch `15-debug-challenge-bypass`.
+6. Review `PRODUCT_IDEAS.md` before choosing branch 16.
 
 ## Current PR And Planned Follow-Up
 
 The current branch is:
-
-```text
-14-alarm-challenge-pip-return
-```
-
-Proposed title:
-
-```text
-14. Add Picture-in-Picture return to the active challenge
-```
-
-Its goal is to provide a compact return surface when an active challenge is minimized. PiP must not
-stop or complete the alarm. Implementation and verification are complete; only push, pull-request,
-and merge work remains.
-
-The next dedicated developer-tooling branch after PR 14 merges is:
 
 ```text
 15-debug-challenge-bypass
@@ -472,14 +495,17 @@ The next dedicated developer-tooling branch after PR 14 merges is:
 Proposed title:
 
 ```text
-15. Add a debug-only challenge bypass
+15. Add debug-only challenge tools
 ```
 
-The bypass must exist only in debug builds and must invoke the real challenge-completion path.
+Its goal is to provide debug-only reader preview and challenge-completion controls while proving
+that release builds contain neither tool. Implementation, debug verification, and signed-release
+verification are complete. Only the handoff commit, push, pull request, and merge remain.
 
 Likely later sequence:
 
 ```text
+Add DEBUG: Trigger alarm
 Persist active reader progress
 Import user TXT books
 Add FB2/EPUB support
