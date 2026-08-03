@@ -64,6 +64,8 @@ fun SetupScreen(
             checked = state.enabled,
             onCheckedChange = onEnabledChange,
         )
+
+        BuildVariantSetupControls()
     }
 }
 
