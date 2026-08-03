@@ -36,6 +36,16 @@ Constraints:
 - Closing PiP hides only the return surface.
 - The ongoing alarm notification remains the fallback return path.
 
+Compact-surface direction:
+
+- Make PiP look like a miniature, read-only reader rather than a generic alarm badge.
+- Show the current page number, a short excerpt, completed reading time, required reading time, and
+  whether the alarm is sounding.
+- Include a concise return prompt such as `Tap to continue`.
+- Do not accept reading gestures or advance progress inside PiP.
+- Use the same `ReaderViewModel` state for the full reader and PiP so expanding the window restores
+  the same challenge.
+
 Related work:
 
 - Planned branch `14-alarm-challenge-pip-return`.
@@ -169,6 +179,12 @@ UX direction:
 - Consider a small progress ring around the touch point to show whether enough movement has been
   accumulated for the current timer tick.
 - Return the alarm sound gradually when valid movement stops.
+- Use green while valid movement keeps the alarm quiet.
+- Use amber during the grace period after movement stops.
+- Use red or coral once the alarm sound returns.
+- When sound returns, briefly pulse the screen edges and shake the status message once.
+- Do not continuously flash the whole screen or shake the book text. The reading content must remain
+  stable, and warning animation must avoid unnecessary accessibility risk.
 
 Related ideas:
 
@@ -297,6 +313,29 @@ Related work:
 - Proposed PR title: `15. Add a debug-only challenge bypass`.
 - Implement the bypass after the Picture-in-Picture branch rather than mixing it into that product
   feature or another unrelated change.
+
+### IDEA-009: English And Russian UI Localization
+
+Status: `Planned`
+
+Support both English and Russian throughout the application UI.
+
+Initial localization direction:
+
+- Keep English in the default `values/strings.xml` resources.
+- Add Russian translations under `values-ru/strings.xml`.
+- Put user-facing text in string resources instead of hardcoding it in Kotlin or Compose.
+- Follow the device or application language automatically.
+- Keep Kotlin identifiers, package names, logs, and developer-only text in English.
+- Treat UI language and book language as separate concerns; a Russian book must not force the
+  application interface to Russian.
+- Check compact layouts, buttons, dialogs, notifications, alarm text, and PiP in both languages
+  because translated strings do not share humanity's belief in fixed-width buttons.
+
+Future decision:
+
+- Decide later whether the application needs an explicit in-app language selector in addition to
+  Android's per-app language settings.
 
 ## Idea Template
 

@@ -357,14 +357,31 @@ Current visual limitation:
 - PiP currently shrinks and crops the complete reader UI because commit-step 2 has not been
   implemented;
 - this is expected temporary behavior, not the intended final PiP design.
+- An initial standalone compact Compose surface now renders successfully in Preview after replacing
+  an unsupported framework drawable with an application-owned vector asset.
+- The initial generic alarm text is only a technical draft. The accepted product direction is an
+  informative miniature reader.
 
 Next commit-step:
 
-- add a dedicated compact Compose PiP surface;
+- evolve the compact Compose PiP surface into a miniature, read-only reader;
 - track whether `AlarmActivity` is currently in PiP;
-- show the compact surface only in PiP and keep `ReaderRoute` for full-screen mode;
+- let `AlarmActivity`, `ReaderRoute`, and the compact surface use the same `ReaderViewModel`;
+- show the current page, a short text excerpt, reading progress, alarm status, and return prompt;
+- pause challenge progress and disable reading interaction while PiP is visible;
+- keep the compact surface visible only in PiP and keep `ReaderRoute` for full-screen mode;
 - verify that expanding PiP restores the same challenge and that closing PiP leaves the alarm
   active.
+
+Out of scope for PR 14:
+
+- finger trails;
+- green, amber, and red movement feedback;
+- warning edge pulses and status-message shake animation;
+- broader reader or alarm-screen visual polish.
+
+Those behaviors remain recorded in `PRODUCT_IDEAS.md` and should be implemented in a dedicated
+reader-feedback branch rather than expanding the PiP return PR.
 
 Final branch verification has not been run yet. Run
 `.\gradlew.bat testDebugUnitTest assembleDebug` after the PiP UI step is complete.
