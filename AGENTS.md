@@ -702,3 +702,18 @@ banking infrastructure for a button that says “wake me up”.
 
 10. Appending a letter never authorizes a Git mutation. The user remains responsible for staging,
     committing, pulling, and pushing correspondence changes.
+
+11. When the user asks to publish or prepare a correspondence letter for the Telegram channel,
+    produce the complete publication package:
+
+    * one portrait 4:5 illustration consistent with the channel logo and previous letter artwork;
+    * no text, logos, or watermarks inside the illustration;
+    * a literary Russian translation split into exactly two parts;
+    * Part 1 short enough to use safely as the Telegram image caption;
+    * Part 2 formatted as the following regular message, including the closing and hashtags.
+
+    Present the package in publication order: illustration with Part 1 as its caption, followed by
+    Part 2 as a regular message. Preserve the letter's meaning, title, voices, chronology, and
+    running jokes. Obvious typographical errors may be corrected in the public translation, but
+    never modify the immutable English original in `AI_CORRESPONDENCE.md`. Do not publish anything
+    to Telegram automatically unless the user explicitly requests that action.
