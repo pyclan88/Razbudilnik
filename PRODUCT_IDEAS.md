@@ -248,6 +248,20 @@ Reader behavior:
 - Persist normal reading progress so the reader is useful during the day.
 - Let the user import personal books for ordinary reading without requiring premium.
 
+Challenge-to-reader transition decision:
+
+- Completing the challenge must stop alarm sound, remove the notification, cancel recovery, and
+  persist completed challenge progress immediately.
+- After cleanup, keep the reader open and switch the current session from challenge mode to normal
+  reader mode instead of automatically closing `AlarmActivity`.
+- Keep the completed challenge page visible and show a short `Alarm dismissed` confirmation.
+- Do not automatically advance to the next page; let the user choose when to continue.
+- In normal reader mode, remove the movement requirement and timer, unlock ordinary Back and Next
+  navigation, and allow the user to leave freely.
+- Pressing Next after dismissal should continue from the page following the completed challenge.
+- Separate alarm cleanup from closing the activity. The current `stopAlarm()` behavior couples
+  cleanup with `finish()` and must be split when this transition is implemented.
+
 Alarm-challenge monetization:
 
 - Keep bundled public-domain books available for free alarm challenges.

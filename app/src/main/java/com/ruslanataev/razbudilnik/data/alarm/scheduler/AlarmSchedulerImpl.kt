@@ -51,15 +51,14 @@ class AlarmSchedulerImpl @Inject constructor(
         hour: Int? = null,
         minute: Int? = null,
     ): PendingIntent {
-        val intent = Intent(context, AlarmReceiver::class.java).apply {
-            action = AlarmReceiver.ACTION_TRIGGER_ALARM
-
-            if (hour != null) {
-                putExtra(AlarmReceiver.EXTRA_HOUR, hour)
-            }
-            if (minute != null) {
-                putExtra(AlarmReceiver.EXTRA_MINUTE, minute)
-            }
+        val intent = if (hour != null && minute != null) {
+            AlarmReceiver.createTriggerIntent(
+                context = context,
+                hour = hour,
+                minute = minute,
+            )
+        } else {
+            AlarmReceiver.createTriggerIntent(context)
         }
 
         return PendingIntent.getBroadcast(
