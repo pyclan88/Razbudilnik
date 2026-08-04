@@ -547,6 +547,25 @@ Use my answers to distinguish between:
     `@Provides`, `@InstallIn`, component lifetimes, scopes, interface-to-implementation bindings,
     and how Hilt constructs the dependency graph.
 
+17. For learning-heavy implementation outside tests and Hilt, do not let the workflow become pure
+    copy and paste. Explain the intent and relevant APIs first, then ask me to write one focused
+    method, control-flow block, or integration point when practical. Review my attempt before
+    showing the complete corrected form. Keep trivial and already-understood changes fast.
+
+18. Before the commit gate for a learning-heavy step, use an understanding gate. Ask me to explain
+    the chronological runtime flow and the critical identity, state, or lifecycle rule in my own
+    words. A successful build, device test, or copied implementation is not evidence that I
+    understand the code.
+
+19. If I cannot explain the new code or say that I lost the thread, pause implementation. Trace the
+    real project call sites, explain the mechanism again from simpler first principles, and ask a
+    narrower checkpoint question. Do not begin the next code step until my explanation is
+    substantially correct.
+
+20. Do not turn the understanding gate into performative trivia. Test causal understanding that
+    helps me debug or extend the project later, not memorization of syntax that Android Studio can
+    display for free.
+
 ### Knowledge profile
 
 Confirmed knowledge:
