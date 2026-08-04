@@ -61,5 +61,22 @@ class AlarmReceiver : BroadcastReceiver() {
         const val ACTION_TRIGGER_ALARM = "com.ruslanataev.razbudilnik.action.TRIGGER_ALARM"
         const val EXTRA_HOUR = "extra_hour"
         const val EXTRA_MINUTE = "extra_minute"
+
+        fun createTriggerIntent(
+            context: Context,
+            hour: Int,
+            minute: Int,
+        ): Intent {
+            return createTriggerIntent(context).apply {
+                putExtra(EXTRA_HOUR, hour)
+                putExtra(EXTRA_MINUTE, minute)
+            }
+        }
+
+        fun createTriggerIntent(context: Context): Intent {
+            return Intent(context, AlarmReceiver::class.java).apply {
+                action = ACTION_TRIGGER_ALARM
+            }
+        }
     }
 }
