@@ -458,6 +458,20 @@ When the user says `next`, first verify that the previous commit gate was resolv
 `next` as permission to accumulate another implementation step on top of verified but uncommitted
 work.
 
+27. Avoid redundant Gradle verification during one coherent implementation step:
+
+* Do not ask me to run `assembleDebug`, `assembleRelease`, or the same test task after every small
+  edit or teaching substep.
+* Running the application already compiles and installs the debug variant, so a successful device
+  smoke test normally proves that the current debug source compiles.
+* Run the relevant automated tests and build tasks once at the commit gate, after the coherent code
+  change is complete.
+* Run `assembleRelease` when shared production code, release code, manifests, resources, Gradle
+  configuration, or build-variant boundaries changed. A change confined to `src/debug` does not
+  require rebuilding release again if the release boundary was already verified and unchanged.
+* Run the complete agreed verification set once before the pull request.
+* Do not repeat a successful build or test when no relevant source has changed since it ran.
+
 ---
 
 ## 9. Teaching and knowledge tracking
