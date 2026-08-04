@@ -43,7 +43,7 @@ C:\Users\Asus\AndroidStudioProjects\Razbudilnik
 Current branch:
 
 ```text
-15-debug-challenge-bypass
+16-debug-alarm-trigger
 ```
 
 Base branch:
@@ -55,15 +55,17 @@ master
 Relevant commits:
 
 ```text
-30dee8a chore: ignore generated release artifacts
-4920ac5 docs: record instant debug alarm trigger idea
-9ee125c feat: add debug reader preview
-8652142 feat: add debug challenge bypass control
-c052ef4 14. Add Picture-in-Picture return to the active challenge (#14)
+1297655 feat: add instant debug alarm trigger
+716e99a docs: record post-challenge reading flow
+ac1cd0d docs: reduce redundant build verification
+55fea66 docs: add understanding gates for development
+525911d refactor: centralize alarm trigger intents
+52972b4 15. Add debug-only challenge tools (#15)
 ```
 
-PR 14 is merged. PR 15 is implemented and verified in debug and locally signed release builds on
-the physical Tecno Android 14 device. The branch is ready to push and open as a pull request.
+PR 15 is merged. PR 16 is implemented and verified in debug and release builds. Its debug-only
+instant alarm trigger was smoke-tested on the physical Tecno Android 14 device. The branch is ready
+for its handoff commit, push, and pull request.
 
 ## Android Configuration
 
@@ -462,6 +464,60 @@ Deferred developer tool:
   flow immediately;
 - it must remain under `src/debug` and absent from release builds.
 
+## PR 16: Instant Debug Alarm Trigger
+
+Goal:
+
+- start the complete alarm flow immediately from the debug setup screen;
+- avoid repeatedly scheduling an alarm and waiting for its wall-clock trigger during development;
+- preserve the production receiver, service, notification, reader-entry, active-session, and
+  rescheduling behavior;
+- keep the tool absent from release builds.
+
+Completed commit `525911d`:
+
+- `AlarmReceiver` owns factories for both alarm-trigger Intent forms;
+- the full factory adds the alarm hour and minute extras;
+- the identity-only factory uses the same component and action without extras;
+- `AlarmSchedulerImpl` uses the full Intent for scheduling and the identity-only Intent for
+  cancellation;
+- PendingIntent cancellation remains valid because Android identity uses the target component,
+  action, request code, and relevant flags rather than extras.
+
+Completed commit `1297655`:
+
+- debug builds show `DEBUG: Trigger alarm` on the setup screen;
+- the control reads the current local hour and minute;
+- it sends the real trigger broadcast directly to `AlarmReceiver`;
+- only the `AlarmManager` waiting period is bypassed;
+- `AlarmReceiver` still starts `AlarmRingingService`, emits `notifyAlarmStarted()`, and invokes the
+  appropriate enabled-alarm or Direct Boot rescheduling use case;
+- release builds continue using the no-op `BuildVariantSetupControls`.
+
+Documentation commits:
+
+- `55fea66` adds mandatory understanding gates before implementation commits;
+- `ac1cd0d` prevents redundant full Gradle builds after every tiny edit;
+- `716e99a` records the planned transition from a completed alarm challenge into normal reading
+  mode.
+
+Physical Tecno Android 14 verification:
+
+- `DEBUG: Trigger alarm` starts sound, the foreground notification, and the reader immediately;
+- the active challenge uses the real runtime flow;
+- `DEBUG: Finish challenge` still performs normal cleanup;
+- sound stops, the notification disappears, and recovery does not restart the alarm;
+- the existing reader-preview control remains unaffected.
+
+Final automated verification:
+
+```text
+.\gradlew.bat testDebugUnitTest assembleDebug assembleRelease
+BUILD SUCCESSFUL in 8s
+```
+
+The branch has no remaining source changes.
+
 ## IBM PC Android Studio Reminder
 
 At the beginning of the next session on the IBM PC, remind the user to configure Android Studio
@@ -475,37 +531,37 @@ This is currently an IDE configuration reminder. The repository does not yet con
 
 ## Next Session
 
-Finish PR 15:
+Finish PR 16:
 
 1. Commit this handoff update.
-2. Push `15-debug-challenge-bypass`.
-3. Open PR 15.
-4. Merge PR 15 after its checks pass.
+2. Push `16-debug-alarm-trigger`.
+3. Open PR 16.
+4. Merge PR 16 after its checks pass.
 5. Synchronize `master`.
-6. Review `PRODUCT_IDEAS.md` before choosing branch 16.
+6. Review `PRODUCT_IDEAS.md` before choosing branch 17.
 
 ## Current PR And Planned Follow-Up
 
 The current branch is:
 
 ```text
-15-debug-challenge-bypass
+16-debug-alarm-trigger
 ```
 
 Proposed title:
 
 ```text
-15. Add debug-only challenge tools
+16. Add an instant debug alarm trigger
 ```
 
-Its goal is to provide debug-only reader preview and challenge-completion controls while proving
-that release builds contain neither tool. Implementation, debug verification, and signed-release
-verification are complete. Only the handoff commit, push, pull request, and merge remain.
+Its goal is to start the complete alarm runtime immediately from a debug-only setup control while
+proving that release builds contain no such control. Implementation, physical-device smoke
+testing, and final debug/release verification are complete. Only the handoff commit, push, pull
+request, and merge remain.
 
 Likely later sequence:
 
 ```text
-Add DEBUG: Trigger alarm
 Persist active reader progress
 Import user TXT books
 Add FB2/EPUB support
