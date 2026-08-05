@@ -43,7 +43,7 @@ C:\Users\Asus\AndroidStudioProjects\Razbudilnik
 Current branch:
 
 ```text
-16-debug-alarm-trigger
+17-regular-reader-foundation
 ```
 
 Base branch:
@@ -55,17 +55,15 @@ master
 Relevant commits:
 
 ```text
-1297655 feat: add instant debug alarm trigger
-716e99a docs: record post-challenge reading flow
-ac1cd0d docs: reduce redundant build verification
-55fea66 docs: add understanding gates for development
-525911d refactor: centralize alarm trigger intents
+09d8987 16. Add an instant debug alarm trigger (#16)
 52972b4 15. Add debug-only challenge tools (#15)
+c052ef4 14. Add Picture-in-Picture return to the active challenge (#14)
+b63447a 13. Open alarm challenge from foreground (#13)
+8848a46 12. Add bundled book content to reader challenges (#12)
 ```
 
-PR 15 is merged. PR 16 is implemented and verified in debug and release builds. Its debug-only
-instant alarm trigger was smoke-tested on the physical Tecno Android 14 device. The branch is ready
-for its handoff commit, push, and pull request.
+PR 16 is merged. Branch `17-regular-reader-foundation` was created from the synchronized `master`
+branch. No application implementation has been added to branch 17 yet.
 
 ## Android Configuration
 
@@ -103,6 +101,10 @@ When the alarm fires:
 
 The temporary reading requirement remains `10.seconds` per page for smoke testing.
 
+This is the current legacy challenge-centered reader behavior. Branches 17-19 will replace its
+page-based reader assumptions with one ordinary reader and a temporary challenge mode around the
+same canonical text.
+
 Process-death recovery from PR 11 remains active:
 
 - the ringing service refreshes an `AlarmManager` watchdog;
@@ -110,6 +112,63 @@ Process-death recovery from PR 11 remains active:
 - the recovery receiver restarts the service with the alarm time;
 - opening the launcher during an active session returns to the reader;
 - normal challenge completion cancels recovery.
+
+## Branch 17: Regular Reader Foundation
+
+Proposed PR title:
+
+```text
+17. Add the regular reader foundation
+```
+
+Goal:
+
+- make ordinary reading a real product feature available without an alarm;
+- keep both the reader and alarm settings available from the initial application screen;
+- establish one continuous reader that later challenge behavior can reuse;
+- represent positions using canonical source-text offsets rather than generated page identity;
+- provide immersive, text-first reading with gesture navigation.
+
+Accepted reader behavior:
+
+- show only book text and a thin perimeter progress indicator during normal reading;
+- hide the top and bottom system bars;
+- reveal system bars and a back-to-menu control as overlays after a short one-finger tap;
+- auto-hide those overlays after approximately three seconds;
+- keep overlay visibility from resizing or repaginating the book;
+- use a two-finger swipe left to move forward;
+- use a two-finger swipe right to move backward;
+- show whole-book progress with the perimeter line;
+- leave page-turn animation for later polish.
+
+Architecture direction:
+
+- canonical book text is stable domain content;
+- generated pages are temporary UI output determined by the current screen and system font scale;
+- source-text offsets identify displayed ranges;
+- branch 17 does not persist the bookmark yet;
+- branch 17 does not rebuild alarm challenge behavior yet.
+
+Out of scope:
+
+- DataStore or Room progress persistence;
+- active challenge persistence;
+- target challenge word-count selection;
+- movement timing and alarm muting in the new reader architecture;
+- completed-challenge tint;
+- navigation line, page-number input, search, and `Continue from here`;
+- reader animation and final visual polish.
+
+Planned follow-up:
+
+```text
+18-persist-regular-reader-progress
+19-reader-challenge-mode
+```
+
+Branch 18 will persist `bookId` plus a canonical source-text bookmark. Branch 19 will apply
+challenge
+timing, alarm behavior, range styling, and the automatic transition back to ordinary reading.
 
 ## PR 12 Goal
 
@@ -531,38 +590,36 @@ This is currently an IDE configuration reminder. The repository does not yet con
 
 ## Next Session
 
-Finish PR 16:
+Continue branch 17:
 
-1. Commit this handoff update.
-2. Push `16-debug-alarm-trigger`.
-3. Open PR 16.
-4. Merge PR 16 after its checks pass.
-5. Synchronize `master`.
-6. Review `PRODUCT_IDEAS.md` before choosing branch 17.
+1. Commit the product-direction and handoff documentation update.
+2. Inspect the current reader domain and presentation boundaries.
+3. Plan branch 17 as small commit-steps before editing application source.
+4. Implement the ordinary reader without persistence or challenge-specific behavior.
 
 ## Current PR And Planned Follow-Up
 
 The current branch is:
 
 ```text
-16-debug-alarm-trigger
+17-regular-reader-foundation
 ```
 
 Proposed title:
 
 ```text
-16. Add an instant debug alarm trigger
+17. Add the regular reader foundation
 ```
 
-Its goal is to start the complete alarm runtime immediately from a debug-only setup control while
-proving that release builds contain no such control. Implementation, physical-device smoke
-testing, and final debug/release verification are complete. Only the handoff commit, push, pull
-request, and merge remain.
+Its goal is to make ordinary reading available independently of alarms and establish the continuous,
+offset-based reader that later challenge behavior will reuse. Application implementation has not
+started.
 
 Likely later sequence:
 
 ```text
-Persist active reader progress
+Persist regular reader progress
+Rebuild the alarm challenge as a reader mode
 Import user TXT books
 Add FB2/EPUB support
 ```
