@@ -10,6 +10,7 @@ object ReaderBookDtoToReaderBookMapper {
             id = readerBookDto.id,
             title = readerBookDto.title,
             author = readerBookDto.author,
+            text = readerBookDto.text,
             pages = readerBookDto.pages.map(
                 ReaderPageDtoToReaderPageMapper::map,
             ),

@@ -31,6 +31,7 @@ class ReaderBookRepositoryImpl @Inject constructor(
                 id = ReaderBookIds.CAUCASIAN_PRISONER,
                 title = "Кавказский пленник",
                 author = "Лев Николаевич Толстой",
+                text = bookText,
                 pages = createPageDtos(
                     bookId = bookId,
                     bookText = bookText,

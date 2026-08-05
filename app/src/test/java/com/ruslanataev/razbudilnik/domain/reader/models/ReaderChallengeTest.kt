@@ -57,6 +57,7 @@ class ReaderChallengeTest {
             id = "test-book",
             title = "Test Book",
             author = "Test Author",
+            text = "Test book text",
             pages = (1..pageCount).map { pageNumber ->
                 ReaderPage(
                     id = "page-$pageNumber",

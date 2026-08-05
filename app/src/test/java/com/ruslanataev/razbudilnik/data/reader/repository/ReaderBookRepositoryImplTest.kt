@@ -41,6 +41,8 @@ class ReaderBookRepositoryImplTest {
         assertEquals("Кавказский пленник", book.title)
         assertEquals("Лев Николаевич Толстой", book.author)
 
+        assertEquals(bookText, book.text)
+
         assertEquals(
             listOf(
                 "tolstoy-caucasian-prisoner-page-001",

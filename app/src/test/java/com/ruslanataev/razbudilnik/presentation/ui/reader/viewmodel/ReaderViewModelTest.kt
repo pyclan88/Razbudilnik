@@ -32,6 +32,7 @@ class ReaderViewModelTest {
         id = ReaderBookIds.CAUCASIAN_PRISONER,
         title = "Test book",
         author = "Test author",
+        text = "Test book text",
         pages = List(3) { index ->
             ReaderPage(
                 id = "page-$index",
