@@ -281,7 +281,22 @@ Accepted reader architecture:
 - A one-finger movement beyond Android's touch-slop threshold is challenge movement, not a tap.
 - Use a two-finger swipe from right to left to move forward and from left to right to move backward.
 - During a challenge, valid two-finger movement also keeps the alarm quiet.
-- Add page-turn animation later rather than blocking the functional reader foundation.
+
+Interactive page-turn decisions:
+
+- Make page turning follow the user's two-finger movement continuously instead of playing only
+  after a completed swipe.
+- Render the target page underneath the current page so it is already visible during the turn.
+- In landscape orientation, fold the right half toward the left around the vertical center line
+  when moving forward. Use the opposite direction when moving backward.
+- In portrait orientation, fold the bottom half upward around the horizontal center line when
+  moving forward. Use the opposite direction when moving backward.
+- Complete the page turn only after the two fingers move more than half of the relevant reader
+  dimension. Animate back to the current page when the gesture is released before that threshold.
+- Start with a perspective-based 3D half-page flip, including a fold shadow. A physically curved
+  paper-curl shader may be considered later and must not block the first interactive version.
+- Commit the new canonical page offset to the ViewModel only after the page-turn animation
+  completes. A cancelled gesture must not change visible or confirmed reading progress.
 
 Reader typography direction:
 
