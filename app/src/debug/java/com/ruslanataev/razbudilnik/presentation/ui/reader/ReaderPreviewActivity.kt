@@ -14,7 +14,7 @@ class ReaderPreviewActivity : ComponentActivity() {
 
         setContent {
             RazbudilnikTheme {
-                ReaderRoute(onChallengeFinished = ::finish)
+                RegularReaderRoute()
             }
         }
     }
