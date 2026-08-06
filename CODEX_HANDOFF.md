@@ -625,14 +625,40 @@ consistently with the ASUS PC:
 This is currently an IDE configuration reminder. The repository does not yet contain an
 `.editorconfig` that enforces these rules automatically.
 
+## Latest Branch 17 Progress
+
+The regular reader now has:
+
+- adaptive text pagination based on measured Compose constraints;
+- two-finger forward and backward page gestures;
+- in-memory backward-page history owned by `RegularReaderViewModel`;
+- rotation-safe backward navigation, verified by the user on the device;
+- reader entry through the app navigation graph;
+- a debug-only reader entry point and a separate no-cheat `development` build variant.
+
+Ownership decision:
+
+- `RegularReaderViewModel` owns canonical reading position and page-navigation history;
+- `RegularReaderScreen` owns screen measurement, text measurement, and the temporary page range
+  calculated for the current layout constraints;
+- pagination output is a presentation concern because font metrics, orientation, and available
+  width/height determine which source-text range fits on screen;
+- the page range is not persisted reading progress. It is a temporary rendering result.
+
+Current working changes still require their normal commit gate. Do not begin another implementation
+step until the navigation and rotation changes have been reviewed, tested, and committed.
+
 ## Next Session
 
 Continue branch 17:
 
-1. Review and commit the adaptive regular-reader screen, route, and debug-preview connection.
-2. Add the no-cheat `development` build type as a separate tooling commit.
-3. Continue the regular reader with in-memory forward and backward navigation.
-4. Add immersive system-bar and overlay-control behavior.
+1. Finish the commit gate for reader navigation and rotation-safe history.
+2. Keep the reader content inside the safe drawing area so the system navigation bar cannot cover
+   the last lines of text.
+3. Preserve the later product decision: reader entry shows system bars; a one-finger tap reveals
+   the overlay menu/back control and bars, which auto-hide afterward.
+4. Add immersive system-bar and overlay-control behavior as a separate step after safe-area
+   handling.
 
 ## Current PR And Planned Follow-Up
 
