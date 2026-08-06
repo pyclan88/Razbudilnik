@@ -17,6 +17,8 @@ class RegularReaderViewModel @Inject constructor(
     private val getReaderBookUseCase: GetReaderBookUseCase,
 ) : ViewModel() {
 
+    private val previousPageStartOffsets = ArrayDeque<Int>()
+
     private val _state = MutableStateFlow<RegularReaderUiState?>(null)
     val state: StateFlow<RegularReaderUiState?> = _state.asStateFlow()
 
@@ -33,14 +35,17 @@ class RegularReaderViewModel @Inject constructor(
             "Next page start offset must be inside the book text"
         }
 
+        previousPageStartOffsets.addLast(currentState.currentViewOffset)
+
         _state.value = currentState.copy(
             currentViewOffset = nextPageStartOffset,
             readingProgressOffset = maxOf(currentState.readingProgressOffset, nextPageStartOffset),
         )
     }
 
-    fun onPreviousPage(previousPageStartOffset: Int) {
+    fun onPreviousPage() {
         val currentState = _state.value ?: return
+        val previousPageStartOffset = previousPageStartOffsets.removeLastOrNull() ?: return
 
         require(previousPageStartOffset in currentState.bookText.indices) {
             "Previous page start offset must be inside the book text"

@@ -84,7 +84,7 @@ class RegularReaderViewModelTest {
         advanceUntilIdle()
 
         viewModel.onNextPage(nextPageStartOffset = 5)
-        viewModel.onPreviousPage(previousPageStartOffset = 0)
+        viewModel.onPreviousPage()
 
         val state = requireNotNull(viewModel.state.value)
 

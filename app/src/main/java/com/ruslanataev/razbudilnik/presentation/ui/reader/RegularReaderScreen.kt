@@ -24,7 +24,7 @@ import kotlin.math.abs
 fun RegularReaderScreen(
     state: RegularReaderUiState,
     onNextPage: (nextPageStartOffset: Int) -> Unit,
-    onPreviousPage: (previousPageStartOffset: Int) -> Unit,
+    onPreviousPage: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
 
@@ -67,14 +67,6 @@ fun RegularReaderScreen(
             )
         }
 
-        val previousPageStartOffsets = remember(
-            state.bookId,
-            textStyle,
-            pageConstraints,
-        ) {
-            mutableListOf<Int>()
-        }
-
         val useHorizontalPageTurn = pageConstraints.maxWidth > pageConstraints.maxHeight
 
         val minimumSwipeDistancePx = if (useHorizontalPageTurn) {
@@ -96,16 +88,11 @@ fun RegularReaderScreen(
                     minimumSwipeDistancePx = minimumSwipeDistancePx,
                     onPageForward = {
                         if (pageRange.endOffsetExclusive < state.bookText.length) {
-                            previousPageStartOffsets.add(pageRange.startOffset)
                             onNextPage(pageRange.endOffsetExclusive)
                         }
                     },
                     onPageBackward = {
-                        val previousPageStartOffset = previousPageStartOffsets.removeLastOrNull()
-
-                        if (previousPageStartOffset != null) {
-                            onPreviousPage(previousPageStartOffset)
-                        }
+                        onPreviousPage()
                     },
                 ),
         )
