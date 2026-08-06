@@ -17,6 +17,7 @@ import com.ruslanataev.razbudilnik.presentation.ui.setup.viewmodel.SetupViewMode
 
 @Composable
 fun SetupRoute(
+    onOpenReader: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SetupViewModel = hiltViewModel(),
 ) {
@@ -110,6 +111,7 @@ fun SetupRoute(
                 else -> viewModel.onEnabledChange(true)
             }
         },
+        onOpenReader = onOpenReader,
         modifier = modifier,
     )
 }
