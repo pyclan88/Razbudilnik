@@ -472,6 +472,11 @@ work.
 * Run the complete agreed verification set once before the pull request.
 * Do not repeat a successful build or test when no relevant source has changed since it ran.
 
+28. Do not stop a response solely for a small independent formatting, naming, import, or local
+    syntax correction. Show the exact fix and continue with the next safe part of the same coherent
+    step. Still stop for behavioral bugs, architecture decisions, failed verification, unresolved
+    understanding gates, or later work whose correctness depends on the correction.
+
 ---
 
 ## 9. Teaching and knowledge tracking

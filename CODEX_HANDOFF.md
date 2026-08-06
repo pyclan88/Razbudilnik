@@ -55,6 +55,10 @@ master
 Relevant commits:
 
 ```text
+71d3591 feat: load canonical book for regular reader
+cde4f3a feat: add adaptive reader text pagination
+052ee95 refactor: expose canonical reader book text
+7c80617 docs: define regular reader architecture
 09d8987 16. Add an instant debug alarm trigger (#16)
 52972b4 15. Add debug-only challenge tools (#15)
 c052ef4 14. Add Picture-in-Picture return to the active challenge (#14)
@@ -63,7 +67,8 @@ b63447a 13. Open alarm challenge from foreground (#13)
 ```
 
 PR 16 is merged. Branch `17-regular-reader-foundation` was created from the synchronized `master`
-branch. No application implementation has been added to branch 17 yet.
+branch. Its canonical-text model, adaptive paginator, and regular-reader loading pipeline are
+committed. The adaptive reader UI is implemented and smoke-tested but not yet committed.
 
 ## Android Configuration
 
@@ -148,6 +153,38 @@ Architecture direction:
 - source-text offsets identify displayed ranges;
 - branch 17 does not persist the bookmark yet;
 - branch 17 does not rebuild alarm challenge behavior yet.
+
+Completed commits:
+
+- exposed canonical book text through the data and domain reader models;
+- added `ReaderPageRange` and `ReaderTextPaginator` for screen-aware page generation;
+- added `GetReaderBookUseCase`, `RegularReaderUiState`, and `RegularReaderViewModel`;
+- added focused mapper, repository, model, paginator, use-case, and ViewModel tests.
+
+Current uncommitted commit-step:
+
+- `RegularReaderScreen` measures the available screen with the same text style used to render it;
+- `RegularReaderRoute` converts the canonical text into the page visible on the current device;
+- the debug reader preview now opens the regular reader route;
+- the physical-device landscape smoke test succeeded with the bundled Russian book;
+- verify the trailing comma in the `RegularReaderScreen(...)` call before the commit gate.
+
+Reader typography follow-up:
+
+- automatic hyphenation is deferred until reader polish;
+- hyphenation must use book-language metadata instead of a Russian locale hardcoded in UI;
+- typography changes may regenerate pages, while canonical source-text offsets remain stable.
+
+Planned build-type follow-up:
+
+- add a separate `development` build type in a small tooling commit after the adaptive reader UI;
+- `debug` remains debuggable and includes cheat controls;
+- `development` will be debug-signed and debuggable but compile no cheat controls;
+- `release` remains the publication build and contains no cheat controls;
+- keep the same application ID for all three variants because the Tecno alarm reliability depends
+  on the current package identity, accepting that installing one variant replaces another;
+- provide no-op `BuildVariantSetupControls` and `BuildVariantChallengeControls` implementations in
+  `src/development` because that source set must not compile the debug implementations.
 
 Out of scope:
 
@@ -592,10 +629,10 @@ This is currently an IDE configuration reminder. The repository does not yet con
 
 Continue branch 17:
 
-1. Commit the product-direction and handoff documentation update.
-2. Inspect the current reader domain and presentation boundaries.
-3. Plan branch 17 as small commit-steps before editing application source.
-4. Implement the ordinary reader without persistence or challenge-specific behavior.
+1. Review and commit the adaptive regular-reader screen, route, and debug-preview connection.
+2. Add the no-cheat `development` build type as a separate tooling commit.
+3. Continue the regular reader with in-memory forward and backward navigation.
+4. Add immersive system-bar and overlay-control behavior.
 
 ## Current PR And Planned Follow-Up
 
@@ -612,8 +649,9 @@ Proposed title:
 ```
 
 Its goal is to make ordinary reading available independently of alarms and establish the continuous,
-offset-based reader that later challenge behavior will reuse. Application implementation has not
-started.
+offset-based reader that later challenge behavior will reuse. Canonical text, adaptive pagination,
+and the reader loading pipeline are committed; the first adaptive reading screen is awaiting its
+commit gate.
 
 Likely later sequence:
 

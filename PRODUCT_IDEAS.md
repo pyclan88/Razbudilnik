@@ -283,6 +283,18 @@ Accepted reader architecture:
 - During a challenge, valid two-finger movement also keeps the alarm quiet.
 - Add page-turn animation later rather than blocking the functional reader foundation.
 
+Reader typography direction:
+
+- Measure pagination and render visible text with the same `TextStyle`; otherwise measured page
+  boundaries may not match what the user sees.
+- Consider `LineBreak.Paragraph` and `Hyphens.Auto` for book text during reader polish.
+- Store book-language metadata and use it for locale-aware hyphenation. Do not hardcode Russian in
+  the reader merely because the bundled MVP book is Russian.
+- Treat automatic hyphenation, justification, typeface, line height, paragraph spacing, and page
+  margins as reader polish after adaptive pagination and navigation work correctly.
+- Typography and system font-scale changes may regenerate page boundaries, while canonical
+  source-text offsets remain stable.
+
 Progress and navigation decisions:
 
 - Keep `currentViewOffset` separate from `readingProgressOffset`.
