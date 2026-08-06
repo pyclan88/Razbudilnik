@@ -44,8 +44,12 @@ internal class ReaderTextPaginator(
             "Reader page layout must contain at least one line"
         }
 
+        val lastVisibleLineIndex = (0 until layoutResult.lineCount).lastOrNull { lineIndex ->
+            layoutResult.getLineBottom(lineIndex) <= constraints.maxHeight
+        } ?: 0
+
         val relativeEndOffset = layoutResult.getLineEnd(
-            lineIndex = layoutResult.lineCount - 1,
+            lineIndex = lastVisibleLineIndex,
             visibleEnd = false,
         )
 

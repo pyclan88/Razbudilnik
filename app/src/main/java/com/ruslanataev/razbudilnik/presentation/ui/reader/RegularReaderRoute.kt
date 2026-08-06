@@ -33,6 +33,8 @@ fun RegularReaderRoute(
 
     RegularReaderScreen(
         state = currentState,
+        onNextPage = viewModel::onNextPage,
+        onPreviousPage = viewModel::onPreviousPage,
         modifier = modifier,
     )
 }
