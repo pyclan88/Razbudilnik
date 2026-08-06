@@ -55,6 +55,43 @@ class RegularReaderViewModelTest {
         assertEquals(0, state.readingProgressOffset)
     }
 
+    @Test
+    fun `moving forward changes visible position and advances reading progress`() = runTest {
+        coEvery {
+            useCase.invoke(ReaderBookIds.CAUCASIAN_PRISONER)
+        } returns testBook
+
+        val viewModel = createViewModel()
+
+        advanceUntilIdle()
+
+        viewModel.onNextPage(nextPageStartOffset = 5)
+
+        val state = requireNotNull(viewModel.state.value)
+
+        assertEquals(5, state.currentViewOffset)
+        assertEquals(5, state.readingProgressOffset)
+    }
+
+    @Test
+    fun `moving backward changes visible position without reducing reading progress`() = runTest {
+        coEvery {
+            useCase.invoke(ReaderBookIds.CAUCASIAN_PRISONER)
+        } returns testBook
+
+        val viewModel = createViewModel()
+
+        advanceUntilIdle()
+
+        viewModel.onNextPage(nextPageStartOffset = 5)
+        viewModel.onPreviousPage(previousPageStartOffset = 0)
+
+        val state = requireNotNull(viewModel.state.value)
+
+        assertEquals(0, state.currentViewOffset)
+        assertEquals(5, state.readingProgressOffset)
+    }
+
     private fun createViewModel(): RegularReaderViewModel {
         return RegularReaderViewModel(
             getReaderBookUseCase = useCase,

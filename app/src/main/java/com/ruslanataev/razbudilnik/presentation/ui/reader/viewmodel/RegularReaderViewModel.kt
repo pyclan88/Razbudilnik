@@ -26,6 +26,29 @@ class RegularReaderViewModel @Inject constructor(
         }
     }
 
+    fun onNextPage(nextPageStartOffset: Int) {
+        val currentState = _state.value ?: return
+
+        require(nextPageStartOffset in currentState.bookText.indices) {
+            "Next page start offset must be inside the book text"
+        }
+
+        _state.value = currentState.copy(
+            currentViewOffset = nextPageStartOffset,
+            readingProgressOffset = maxOf(currentState.readingProgressOffset, nextPageStartOffset),
+        )
+    }
+
+    fun onPreviousPage(previousPageStartOffset: Int) {
+        val currentState = _state.value ?: return
+
+        require(previousPageStartOffset in currentState.bookText.indices) {
+            "Previous page start offset must be inside the book text"
+        }
+
+        _state.value = currentState.copy(currentViewOffset = previousPageStartOffset)
+    }
+
     private suspend fun loadBook() {
         val book = getReaderBookUseCase.invoke(ReaderBookIds.CAUCASIAN_PRISONER)
 
