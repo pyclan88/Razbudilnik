@@ -43,7 +43,7 @@ C:\Users\Asus\AndroidStudioProjects\Razbudilnik
 Current branch:
 
 ```text
-16-debug-alarm-trigger
+17-regular-reader-foundation
 ```
 
 Base branch:
@@ -55,17 +55,20 @@ master
 Relevant commits:
 
 ```text
-1297655 feat: add instant debug alarm trigger
-716e99a docs: record post-challenge reading flow
-ac1cd0d docs: reduce redundant build verification
-55fea66 docs: add understanding gates for development
-525911d refactor: centralize alarm trigger intents
+71d3591 feat: load canonical book for regular reader
+cde4f3a feat: add adaptive reader text pagination
+052ee95 refactor: expose canonical reader book text
+7c80617 docs: define regular reader architecture
+09d8987 16. Add an instant debug alarm trigger (#16)
 52972b4 15. Add debug-only challenge tools (#15)
+c052ef4 14. Add Picture-in-Picture return to the active challenge (#14)
+b63447a 13. Open alarm challenge from foreground (#13)
+8848a46 12. Add bundled book content to reader challenges (#12)
 ```
 
-PR 15 is merged. PR 16 is implemented and verified in debug and release builds. Its debug-only
-instant alarm trigger was smoke-tested on the physical Tecno Android 14 device. The branch is ready
-for its handoff commit, push, and pull request.
+PR 16 is merged. Branch `17-regular-reader-foundation` was created from the synchronized `master`
+branch. Its canonical-text model, adaptive paginator, and regular-reader loading pipeline are
+committed. The adaptive reader UI is implemented and smoke-tested but not yet committed.
 
 ## Android Configuration
 
@@ -103,6 +106,10 @@ When the alarm fires:
 
 The temporary reading requirement remains `10.seconds` per page for smoke testing.
 
+This is the current legacy challenge-centered reader behavior. Branches 17-19 will replace its
+page-based reader assumptions with one ordinary reader and a temporary challenge mode around the
+same canonical text.
+
 Process-death recovery from PR 11 remains active:
 
 - the ringing service refreshes an `AlarmManager` watchdog;
@@ -110,6 +117,95 @@ Process-death recovery from PR 11 remains active:
 - the recovery receiver restarts the service with the alarm time;
 - opening the launcher during an active session returns to the reader;
 - normal challenge completion cancels recovery.
+
+## Branch 17: Regular Reader Foundation
+
+Proposed PR title:
+
+```text
+17. Add the regular reader foundation
+```
+
+Goal:
+
+- make ordinary reading a real product feature available without an alarm;
+- keep both the reader and alarm settings available from the initial application screen;
+- establish one continuous reader that later challenge behavior can reuse;
+- represent positions using canonical source-text offsets rather than generated page identity;
+- provide immersive, text-first reading with gesture navigation.
+
+Accepted reader behavior:
+
+- show only book text and a thin perimeter progress indicator during normal reading;
+- hide the top and bottom system bars;
+- reveal system bars and a back-to-menu control as overlays after a short one-finger tap;
+- auto-hide those overlays after approximately three seconds;
+- keep overlay visibility from resizing or repaginating the book;
+- use a two-finger swipe left to move forward;
+- use a two-finger swipe right to move backward;
+- show whole-book progress with the perimeter line;
+- leave page-turn animation for later polish.
+
+Architecture direction:
+
+- canonical book text is stable domain content;
+- generated pages are temporary UI output determined by the current screen and system font scale;
+- source-text offsets identify displayed ranges;
+- branch 17 does not persist the bookmark yet;
+- branch 17 does not rebuild alarm challenge behavior yet.
+
+Completed commits:
+
+- exposed canonical book text through the data and domain reader models;
+- added `ReaderPageRange` and `ReaderTextPaginator` for screen-aware page generation;
+- added `GetReaderBookUseCase`, `RegularReaderUiState`, and `RegularReaderViewModel`;
+- added focused mapper, repository, model, paginator, use-case, and ViewModel tests.
+
+Current uncommitted commit-step:
+
+- `RegularReaderScreen` measures the available screen with the same text style used to render it;
+- `RegularReaderRoute` converts the canonical text into the page visible on the current device;
+- the debug reader preview now opens the regular reader route;
+- the physical-device landscape smoke test succeeded with the bundled Russian book;
+- verify the trailing comma in the `RegularReaderScreen(...)` call before the commit gate.
+
+Reader typography follow-up:
+
+- automatic hyphenation is deferred until reader polish;
+- hyphenation must use book-language metadata instead of a Russian locale hardcoded in UI;
+- typography changes may regenerate pages, while canonical source-text offsets remain stable.
+
+Planned build-type follow-up:
+
+- add a separate `development` build type in a small tooling commit after the adaptive reader UI;
+- `debug` remains debuggable and includes cheat controls;
+- `development` will be debug-signed and debuggable but compile no cheat controls;
+- `release` remains the publication build and contains no cheat controls;
+- keep the same application ID for all three variants because the Tecno alarm reliability depends
+  on the current package identity, accepting that installing one variant replaces another;
+- provide no-op `BuildVariantSetupControls` and `BuildVariantChallengeControls` implementations in
+  `src/development` because that source set must not compile the debug implementations.
+
+Out of scope:
+
+- DataStore or Room progress persistence;
+- active challenge persistence;
+- target challenge word-count selection;
+- movement timing and alarm muting in the new reader architecture;
+- completed-challenge tint;
+- navigation line, page-number input, search, and `Continue from here`;
+- reader animation and final visual polish.
+
+Planned follow-up:
+
+```text
+18-persist-regular-reader-progress
+19-reader-challenge-mode
+```
+
+Branch 18 will persist `bookId` plus a canonical source-text bookmark. Branch 19 will apply
+challenge
+timing, alarm behavior, range styling, and the automatic transition back to ordinary reading.
 
 ## PR 12 Goal
 
@@ -529,40 +625,65 @@ consistently with the ASUS PC:
 This is currently an IDE configuration reminder. The repository does not yet contain an
 `.editorconfig` that enforces these rules automatically.
 
+## Latest Branch 17 Progress
+
+The regular reader now has:
+
+- adaptive text pagination based on measured Compose constraints;
+- two-finger forward and backward page gestures;
+- in-memory backward-page history owned by `RegularReaderViewModel`;
+- rotation-safe backward navigation, verified by the user on the device;
+- reader entry through the app navigation graph;
+- a debug-only reader entry point and a separate no-cheat `development` build variant.
+
+Ownership decision:
+
+- `RegularReaderViewModel` owns canonical reading position and page-navigation history;
+- `RegularReaderScreen` owns screen measurement, text measurement, and the temporary page range
+  calculated for the current layout constraints;
+- pagination output is a presentation concern because font metrics, orientation, and available
+  width/height determine which source-text range fits on screen;
+- the page range is not persisted reading progress. It is a temporary rendering result.
+
+Current working changes still require their normal commit gate. Do not begin another implementation
+step until the navigation and rotation changes have been reviewed, tested, and committed.
+
 ## Next Session
 
-Finish PR 16:
+Continue branch 17:
 
-1. Commit this handoff update.
-2. Push `16-debug-alarm-trigger`.
-3. Open PR 16.
-4. Merge PR 16 after its checks pass.
-5. Synchronize `master`.
-6. Review `PRODUCT_IDEAS.md` before choosing branch 17.
+1. Finish the commit gate for reader navigation and rotation-safe history.
+2. Keep the reader content inside the safe drawing area so the system navigation bar cannot cover
+   the last lines of text.
+3. Preserve the later product decision: reader entry shows system bars; a one-finger tap reveals
+   the overlay menu/back control and bars, which auto-hide afterward.
+4. Add immersive system-bar and overlay-control behavior as a separate step after safe-area
+   handling.
 
 ## Current PR And Planned Follow-Up
 
 The current branch is:
 
 ```text
-16-debug-alarm-trigger
+17-regular-reader-foundation
 ```
 
 Proposed title:
 
 ```text
-16. Add an instant debug alarm trigger
+17. Add the regular reader foundation
 ```
 
-Its goal is to start the complete alarm runtime immediately from a debug-only setup control while
-proving that release builds contain no such control. Implementation, physical-device smoke
-testing, and final debug/release verification are complete. Only the handoff commit, push, pull
-request, and merge remain.
+Its goal is to make ordinary reading available independently of alarms and establish the continuous,
+offset-based reader that later challenge behavior will reuse. Canonical text, adaptive pagination,
+and the reader loading pipeline are committed; the first adaptive reading screen is awaiting its
+commit gate.
 
 Likely later sequence:
 
 ```text
-Persist active reader progress
+Persist regular reader progress
+Rebuild the alarm challenge as a reader mode
 Import user TXT books
 Add FB2/EPUB support
 ```

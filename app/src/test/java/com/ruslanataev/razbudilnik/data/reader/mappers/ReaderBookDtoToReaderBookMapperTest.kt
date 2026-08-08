@@ -11,10 +11,13 @@ class ReaderBookDtoToReaderBookMapperTest {
 
     @Test
     fun `maps reader book dto to reader book`() {
+        val bookText = "Complete canonical book text"
+
         val readerBookDto = ReaderBookDto(
             id = "tolstoy-caucasian-prisoner",
             title = "Кавказский пленник",
             author = "Лев Толстой",
+            text = bookText,
             pages = listOf(
                 ReaderPageDto(
                     id = "page-001",
@@ -31,6 +34,7 @@ class ReaderBookDtoToReaderBookMapperTest {
             id = "tolstoy-caucasian-prisoner",
             title = "Кавказский пленник",
             author = "Лев Толстой",
+            text = bookText,
             pages = listOf(
                 ReaderPage(
                     id = "page-001",

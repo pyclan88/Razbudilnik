@@ -28,6 +28,7 @@ fun SetupScreen(
     state: SetupUiState,
     onTimeSelected: (hour: Int, minute: Int) -> Unit,
     onEnabledChange: (Boolean) -> Unit,
+    onOpenReader: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var isTimePickerVisible by remember { mutableStateOf(false) }
@@ -64,6 +65,10 @@ fun SetupScreen(
             checked = state.enabled,
             onCheckedChange = onEnabledChange,
         )
+
+        Button(onClick = onOpenReader) {
+            Text("Open reader")
+        }
 
         BuildVariantSetupControls()
     }
@@ -116,5 +121,6 @@ private fun SetupScreenPreview() {
         state = SetupUiState.initial(),
         onTimeSelected = { _, _ -> },
         onEnabledChange = {},
+        onOpenReader = {},
     )
 }

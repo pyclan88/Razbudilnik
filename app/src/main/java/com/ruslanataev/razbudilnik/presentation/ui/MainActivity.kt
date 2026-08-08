@@ -6,14 +6,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.ruslanataev.razbudilnik.presentation.ui.alarm.AlarmActivity
-import com.ruslanataev.razbudilnik.presentation.ui.setup.SetupRoute
+import com.ruslanataev.razbudilnik.presentation.ui.navigation.AppNavHost
 import com.ruslanataev.razbudilnik.presentation.ui.theme.RazbudilnikTheme
 import com.ruslanataev.razbudilnik.runtime.alarm.AlarmRingingService
 import com.ruslanataev.razbudilnik.runtime.alarm.events.AlarmRuntimeEvents
@@ -37,11 +35,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             RazbudilnikTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    SetupRoute(
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                AppNavHost(modifier = Modifier.fillMaxSize())
             }
         }
     }

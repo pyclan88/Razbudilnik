@@ -58,10 +58,28 @@ Status: `Planned`
 Persist the active book, page, and completed reading progress so process death or recovery does not
 restart the challenge from the beginning.
 
+Revised persistence direction:
+
+- Treat the canonical book text as the stable source of truth.
+- Persist source-text offsets instead of generated page indexes or page IDs.
+- Generated pages are temporary UI output because system font scale, screen dimensions, and layout
+  constraints can change their boundaries.
+- Keep the confirmed reading position separate from the currently viewed position.
+- The regular-reader bookmark should contain the stable `bookId` and source-text offset.
+- Active challenge persistence will be designed after the regular-reader foundation and its normal
+  progress persistence are complete.
+
+Earlier direction preserved:
+
+- Stable `bookId` and generated `pageId` were originally proposed as persisted challenge identity.
+- This direction is superseded because the current page IDs are positional and change when content
+  is repaginated.
+
 Related work:
 
-- Planned after the Picture-in-Picture branch.
-- Stable `bookId` and `pageId` should identify persisted progress.
+- Branch `17-regular-reader-foundation` establishes the reader without persistence.
+- Planned branch `18-persist-regular-reader-progress` will persist the regular-reader bookmark.
+- Planned branch `19-reader-challenge-mode` will rebuild challenge behavior around the same reader.
 
 ### IDEA-003: User-Imported Books
 
@@ -236,7 +254,7 @@ Related ideas:
 
 ### IDEA-007: Reader-First Product With Premium Alarm Challenges
 
-Status: `Candidate`
+Status: `Active`
 
 Position Razbudilnik as a reader with a distinctive wake-up alarm rather than as an alarm app that
 temporarily displays book pages.
@@ -248,7 +266,101 @@ Reader behavior:
 - Persist normal reading progress so the reader is useful during the day.
 - Let the user import personal books for ordinary reading without requiring premium.
 
-Challenge-to-reader transition decision:
+Accepted reader architecture:
+
+- Use one continuous book reader as the foundation for both ordinary reading and alarm challenges.
+- Make both the reader and alarm settings available from the initial application screen.
+- Treat an alarm challenge as a temporary mode around the ordinary reader, not as separately
+  generated challenge text.
+- Keep the reader immersive: show only book text and a thin perimeter progress indicator during
+  normal interaction.
+- Hide the top and bottom system bars in regular and challenge reading modes.
+- A short one-finger tap reveals the system bars and a back-to-menu control as overlays; the
+  overlays must not resize or repaginate the page.
+- Auto-hide the revealed controls after approximately three seconds of inactivity.
+- A one-finger movement beyond Android's touch-slop threshold is challenge movement, not a tap.
+- Use a two-finger swipe from right to left to move forward and from left to right to move backward.
+- During a challenge, valid two-finger movement also keeps the alarm quiet.
+
+Interactive page-turn decisions:
+
+- Make page turning follow the user's two-finger movement continuously instead of playing only
+  after a completed swipe.
+- Render the target page underneath the current page so it is already visible during the turn.
+- In landscape orientation, fold the right half toward the left around the vertical center line
+  when moving forward. Use the opposite direction when moving backward.
+- In portrait orientation, fold the bottom half upward around the horizontal center line when
+  moving forward. Use the opposite direction when moving backward.
+- Complete the page turn only after the two fingers move more than half of the relevant reader
+  dimension. Animate back to the current page when the gesture is released before that threshold.
+- Start with a perspective-based 3D half-page flip, including a fold shadow. A physically curved
+  paper-curl shader may be considered later and must not block the first interactive version.
+- Commit the new canonical page offset to the ViewModel only after the page-turn animation
+  completes. A cancelled gesture must not change visible or confirmed reading progress.
+
+Reader typography direction:
+
+- Measure pagination and render visible text with the same `TextStyle`; otherwise measured page
+  boundaries may not match what the user sees.
+- Consider `LineBreak.Paragraph` and `Hyphens.Auto` for book text during reader polish.
+- Store book-language metadata and use it for locale-aware hyphenation. Do not hardcode Russian in
+  the reader merely because the bundled MVP book is Russian.
+- Treat automatic hyphenation, justification, typeface, line height, paragraph spacing, and page
+  margins as reader polish after adaptive pagination and navigation work correctly.
+- Typography and system font-scale changes may regenerate page boundaries, while canonical
+  source-text offsets remain stable.
+
+Progress and navigation decisions:
+
+- Keep `currentViewOffset` separate from `readingProgressOffset`.
+- A normal sequential forward page turn advances confirmed reading progress.
+- A backward page turn changes only the visible position and never erases confirmed progress.
+- Future navigation-line jumps, page-number jumps, and search results change only the visible
+  position.
+- A future `Continue from here` action explicitly replaces confirmed reading progress with the
+  currently viewed position.
+- A future `Return to progress` action restores the confirmed reading position.
+- Generated page numbers are temporary layout information and must be converted to source-text
+  offsets before persistence.
+- If the user leaves ordinary reading without turning the current page, reopen from the beginning
+  of that page.
+- If a challenge completes without another page turn, ordinary reading resumes from the challenge
+  ending.
+
+Progress-indicator decisions:
+
+- In ordinary reading mode, the perimeter line shows progress through the complete book.
+- In challenge mode, the perimeter line shows active reading progress for the current generated
+  page.
+- Use different semantic colors for ordinary reading and challenge progress.
+- When the final challenge portion completes, briefly pulse only the perimeter line, change it to
+  the ordinary-reading color, and transition automatically into ordinary reading.
+- Do not flash the full screen.
+
+Challenge-range decisions:
+
+- Configure the target challenge word count inside the project initially; consider a user setting
+  only after experimentation establishes a useful default.
+- Start the challenge from confirmed regular-reader progress.
+- End the challenge immediately after the configured nth complete word rather than extending to a
+  sentence boundary.
+- Never split a word.
+- On the final challenge page, reveal the following ordinary-reading text automatically after the
+  challenge completes.
+- Tint only the completed challenge portion of that current page as a continuation hint.
+- Render the following text using the ordinary-reading color.
+- Do not tint the entire page or retain challenge tint after the user leaves that page.
+
+Later reader navigation:
+
+- Add an overlay navigation line that can jump through the book.
+- Support entering a generated page number for the current layout.
+- Add an easy return to confirmed reading progress.
+- Consider full-text search.
+- Let the user explicitly make a browsed position the start of future reading and the next
+  challenge.
+
+Earlier challenge-to-reader transition direction preserved:
 
 - Completing the challenge must stop alarm sound, remove the notification, cancel recovery, and
   persist completed challenge progress immediately.
@@ -261,6 +373,10 @@ Challenge-to-reader transition decision:
 - Pressing Next after dismissal should continue from the page following the completed challenge.
 - Separate alarm cleanup from closing the activity. The current `stopAlarm()` behavior couples
   cleanup with `finish()` and must be split when this transition is implemented.
+
+This earlier direction used visible page controls and a page-based challenge model. The accepted
+architecture above supersedes those UI and identity details while preserving the decision to keep
+reading after alarm cleanup.
 
 Alarm-challenge monetization:
 
@@ -303,6 +419,12 @@ Related ideas:
 - IDEA-002: Persist Active Reader Progress
 - IDEA-003: User-Imported Books
 - IDEA-004: Explain The Alarm Challenge Contract
+
+Active implementation sequence:
+
+- Branch `17-regular-reader-foundation`: ordinary immersive reader without persistence.
+- Branch `18-persist-regular-reader-progress`: source-offset bookmark persistence.
+- Branch `19-reader-challenge-mode`: apply alarm challenge behavior to the ordinary reader.
 
 ### IDEA-008: Debug-Only Challenge Bypass
 
