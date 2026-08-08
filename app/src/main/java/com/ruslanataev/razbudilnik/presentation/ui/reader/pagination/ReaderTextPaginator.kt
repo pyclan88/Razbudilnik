@@ -6,6 +6,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import com.ruslanataev.razbudilnik.presentation.ui.reader.models.ReaderPageRange
 
+private const val MEASUREMENT_CHUNK_CHARACTER_COUNT = 8_192
+
 internal class ReaderTextPaginator(
     private val textMeasurer: TextMeasurer,
 ) {
@@ -30,37 +32,51 @@ internal class ReaderTextPaginator(
             return null
         }
 
-        val remainingText = bookText.substring(startOffset)
+        var measurementEndOffset =
+            (startOffset + MEASUREMENT_CHUNK_CHARACTER_COUNT).coerceAtMost(bookText.length)
 
-        val layoutResult = textMeasurer.measure(
-            text = remainingText,
-            style = textStyle,
-            overflow = TextOverflow.Clip,
-            softWrap = true,
-            constraints = constraints,
-        )
+        while (true) {
+            val measuredText = bookText.substring(
+                startIndex = startOffset,
+                endIndex = measurementEndOffset,
+            )
 
-        check(layoutResult.lineCount > 0) {
-            "Reader page layout must contain at least one line"
+            val layoutResult = textMeasurer.measure(
+                text = measuredText,
+                style = textStyle,
+                overflow = TextOverflow.Clip,
+                softWrap = true,
+                constraints = constraints,
+            )
+
+            check(layoutResult.lineCount > 0) {
+                "Reader page layout must contain at least one line"
+            }
+
+            val lastVisibleLineIndex = (0 until layoutResult.lineCount).lastOrNull { lineIndex ->
+                layoutResult.getLineBottom(lineIndex) <= constraints.maxHeight
+            } ?: 0
+
+            val relativeEndOffset = layoutResult.getLineEnd(
+                lineIndex = lastVisibleLineIndex,
+                visibleEnd = false,
+            )
+
+            check(relativeEndOffset > 0) {
+                "Reader page must contain at least one character"
+            }
+
+            val endOffsetExclusive = startOffset + relativeEndOffset
+
+            if (endOffsetExclusive < measurementEndOffset || measurementEndOffset == bookText.length) {
+                return ReaderPageRange(
+                    startOffset = startOffset,
+                    endOffsetExclusive = endOffsetExclusive,
+                )
+            }
+
+            measurementEndOffset =
+                (measurementEndOffset + MEASUREMENT_CHUNK_CHARACTER_COUNT).coerceAtMost(bookText.length)
         }
-
-        val lastVisibleLineIndex = (0 until layoutResult.lineCount).lastOrNull { lineIndex ->
-            layoutResult.getLineBottom(lineIndex) <= constraints.maxHeight
-        } ?: 0
-
-        val relativeEndOffset = layoutResult.getLineEnd(
-            lineIndex = lastVisibleLineIndex,
-            visibleEnd = false,
-        )
-
-        check(relativeEndOffset > 0) {
-            "Reader page must contain at least one character"
-        }
-
-        return ReaderPageRange(
-            startOffset = startOffset,
-            endOffsetExclusive = (startOffset + relativeEndOffset)
-                .coerceAtMost(bookText.length),
-        )
     }
 }
