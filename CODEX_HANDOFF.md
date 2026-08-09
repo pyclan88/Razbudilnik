@@ -51,13 +51,16 @@ master
 Latest relevant commits:
 
 ```text
+a26950b feat: add imported book text storage
+c850f2f chore: remove completed pagination benchmark
+54cb9e7 feat: add imported book metadata database
+3b45b12 docs: update TXT import handoff and decisions
 922169c feat: add TXT encoding detection and decoding
 d16fb93 17. Add regular reader foundation (#17)
-09d8987 16. Add an instant debug alarm trigger (#16)
-52972b4 15. Add debug-only challenge tools (#15)
 ```
 
-Branch 17 is merged. Branch 18 is active, and its first commit-step is complete.
+Branch 17 is merged. Branch 18 is active. Encoding, Room metadata storage, and canonical UTF-8 text
+storage are complete; end-to-end import orchestration is next.
 
 ## Android Configuration
 
@@ -87,7 +90,7 @@ The app currently provides:
 - adaptive, screen-measured pagination;
 - two-finger forward and backward reader gestures;
 - separate visible and confirmed reading offsets;
-- debug-only reader, alarm, challenge-completion, and pagination-benchmark controls;
+- debug-only reader, alarm, and challenge-completion controls;
 - a no-cheat `development` build for realistic personal alarm testing.
 
 The bundled content remains Leo Tolstoy's public-domain `Кавказский пленник`.
@@ -121,7 +124,8 @@ Elapsed: approximately 65 seconds
 
 The paginator measures bounded chunks instead of sending the complete unread remainder to
 `TextMeasurer`. The benchmark confirms that complete synchronous pagination must not block import
-or opening the reader.
+or opening the reader. The temporary War and Peace asset and benchmark UI were removed after the
+measurement; the result above remains the architectural evidence.
 
 Accepted future generation behavior:
 
@@ -199,28 +203,77 @@ Verification:
 BUILD SUCCESSFUL in 4s
 ```
 
+### Completed Commit-Step: Imported Book Persistence Foundation
+
+Commits:
+
+```text
+54cb9e7 feat: add imported book metadata database
+a26950b feat: add imported book text storage
+```
+
+Implemented metadata storage:
+
+- Room 3 database `reader.db`;
+- `ImportedBookEntity` with stable ID, title, optional author, and import timestamp;
+- DAO operations to upsert, load by ID, observe all imports, and delete by ID;
+- Hilt providers for the singleton database and DAO;
+- exported Room schema version 1 committed under `app/schemas`.
+
+Implemented canonical text storage:
+
+- app-private path `<filesDir>/reader_books/imported/<bookId>.txt`;
+- explicit UTF-8 writes and reads on `Dispatchers.IO`;
+- `null` for a missing text file;
+- idempotent deletion that throws when an existing file cannot be removed;
+- no absolute filesystem path persisted in Room because it is derived deterministically from the
+  stable book ID.
+
+Storage tests use a mocked Android `Context` only to supply `filesDir`. JUnit `TemporaryFolder`
+provides a real isolated directory, so Java filesystem operations remain real. Five tests cover
+save/read round trips, missing files, deletion, idempotent deletion, and raw UTF-8 bytes.
+
+Verification:
+
+```text
+ImportedBookTextStorageTest: 5 tests passed
+.\gradlew.bat assembleRelease
+BUILD SUCCESSFUL in 44s
+```
+
+Maintenance completed during this step:
+
+```text
+c850f2f chore: remove completed pagination benchmark
+```
+
+The 5.5 MB War and Peace benchmark asset was never committed and is not required on the ASUS PC.
+Its debug control and tracked benchmark implementation were removed together.
+
 ## Next Commit-Step
 
-Implement app-private imported-book persistence.
+Coordinate Room metadata and canonical text storage behind one imported-book repository operation.
 
-Before writing code:
+Required design work:
 
-1. Inspect existing storage dependencies and conventions.
-2. Choose the smallest storage design that supports multiple imported books.
-3. Define stable imported-book metadata separately from canonical text content.
+1. Define the domain contract and imported-book model needed by the import flow.
+2. Generate a stable, filesystem-safe internal book ID; never derive it from a user-visible title.
+3. Save canonical text and metadata as one repository-level operation.
+4. Define cleanup behavior because Room and the filesystem cannot share one atomic transaction.
+5. Load and delete an imported book through the same repository boundary.
 
 Expected outcome:
 
-- canonical text is stored as UTF-8 under app-private storage;
-- metadata contains at least a stable book ID, title, optional author, and text-file location;
-- the repository can save and load imported content without retaining access to the original
-  document;
+- callers do not coordinate the DAO and text storage manually;
+- a failed metadata write does not leave an orphaned canonical text file;
+- imported content can be saved, loaded, observed, and deleted through one domain-facing boundary;
+- original document access is still not retained;
 - no Android file picker or library UI is included in this commit yet.
 
 Likely remaining branch sequence:
 
 ```text
-1. Persist canonical imported text and metadata
+1. Coordinate canonical text and metadata through an imported-book repository
 2. Add Android TXT file selection and import orchestration
 3. Add minimal imported-book listing and selection
 4. Connect the selected imported book to the ordinary reader
@@ -245,7 +298,7 @@ Likely remaining branch sequence:
 
 ## Known Gaps
 
-- User file selection and imported-book persistence are not implemented yet.
+- User file selection and coordinated end-to-end imported-book persistence are not implemented yet.
 - Reader progress is not persisted.
 - The full page-layout cache is not implemented.
 - The alarm challenge has not been rebuilt around the ordinary reader.
