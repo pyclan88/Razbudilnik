@@ -585,6 +585,19 @@ Use my answers to distinguish between:
     helps me debug or extend the project later, not memorization of syntax that Android Studio can
     display for free.
 
+21. Before asking me to write unfamiliar code myself, do not assume that I already know the API,
+    syntax, or implementation pattern. Teach it first as a short lesson:
+
+* state the problem the mechanism solves;
+* show a small analogous example that is separate from the exact project solution;
+* explain that example from top to bottom, including what each unfamiliar method and value does;
+* show the expected input, runtime behavior, and output or side effect;
+* only then ask me to apply the same mechanism to one focused part of the project.
+
+The example should provide enough information to derive the project code without simply requiring
+me to guess an API I have never used. After my attempt, review it and connect each project line back
+to the lesson example.
+
 ### Knowledge profile
 
 Confirmed knowledge:
