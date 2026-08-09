@@ -83,7 +83,7 @@ Related work:
 
 ### IDEA-003: User-Imported Books
 
-Status: `Candidate`
+Status: `Active`
 
 Allow the user to add personal reading content.
 
@@ -129,6 +129,21 @@ Current format direction:
 - Start with TXT import because it has the smallest parsing and security surface.
 - Consider FB2 and EPUB later as separate extensions.
 - Do not treat later format support as a reason to delay the first import flow.
+
+Accepted TXT import behavior:
+
+- Treat imported file bytes as input and convert them into a canonical Kotlin `String`; do not
+  modify the user's original file.
+- Save canonical imported text as UTF-8 in app-private storage so the reader does not repeatedly
+  decode the source file.
+- Detect UTF-8, UTF-16 little-endian, and UTF-16 big-endian deterministically when a BOM is present.
+- Accept strict valid UTF-8 without a BOM.
+- Do not silently assume Windows-1251 merely because bytes are not valid UTF-8; many legacy
+  encodings can represent the same byte sequence differently.
+- Keep ordinary import automatic in the final UX. Later add confidence-based detection for common
+  legacy encodings and expose manual encoding selection only as a repair fallback in book settings.
+- Branch `18-import-txt-books` implements the TXT import foundation without billing or entitlement
+  checks. Choose the monetization boundary before adding import restrictions.
 
 Billing constraints:
 
@@ -326,6 +341,24 @@ Progress and navigation decisions:
   of that page.
 - If a challenge completes without another page turn, ordinary reading resumes from the challenge
   ending.
+
+Incremental page-generation decisions:
+
+- Use the same canonical-text and page-layout pipeline for bundled and imported books.
+- Let reading begin as soon as the first page can be measured; do not block opening a book until
+  every page has been generated.
+- Generate remaining page ranges incrementally and cache source-text offsets rather than copied
+  page text.
+- While generation is incomplete, show progress such as `1 / ???`, allow sequential reading
+  through generated pages, and disable arbitrary page-number navigation into ungenerated content.
+- Reveal the final page count and later page-number navigation only after generation completes.
+- Key cached page layouts by the book revision and layout-affecting configuration, including the
+  available reader dimensions, system font scale, and relevant text style.
+- Generate and retain only layout variants the user actually uses. A changed font scale or reader
+  size creates a new variant without deleting previously generated variants.
+- A physical-device benchmark of a 3,090,605-character copy of *War and Peace* produced 3,571
+  pages in approximately 65 seconds. This confirms that complete synchronous pagination is not an
+  acceptable import or reader-opening path.
 
 Progress-indicator decisions:
 

@@ -592,6 +592,10 @@ Confirmed knowledge:
 * An `AlarmManager` schedule is owned by Android and survives the Razbudilnik process being killed.
 * The ringing service must postpone the watchdog before its timeout; after process death, the last
   scheduled deadline remains and eventually triggers recovery.
+* Decoding file bytes with a selected charset creates a new Kotlin `String`; it does not mutate the
+  original file or its source `ByteArray`.
+* A BOM can identify UTF-8 or UTF-16 byte order deterministically, while non-UTF-8 bytes without a
+  BOM may match several legacy encodings and must not be blindly treated as Windows-1251.
 
 Currently learning:
 
@@ -604,6 +608,7 @@ Currently learning:
 * Writing useful automated tests without relying on AI-generated complete solutions.
 * Arrange-Act-Assert, test doubles, MockK behavior, coroutine tests, and meaningful assertions.
 * Hilt dependency injection, bindings, modules, components, scopes, and generated dependency graphs.
+* The TXT import pipeline from Android file selection through app-private canonical UTF-8 storage.
 
 ---
 

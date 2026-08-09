@@ -4,27 +4,23 @@
 
 `AGENTS.md` is loaded automatically. Follow its startup sequence before doing project work.
 
-Important rules:
+Important collaboration rules:
 
-- Correct the user's English first and respond in English unless another language is explicitly
-  requested.
+- Correct the user's English first and respond in English unless another language is requested.
 - Do not modify anything unless the user requests that exact action and says `hellgate`.
 - The user performs project edits, builds, tests, and Git operations by default.
-- Do not inspect or report the staging state unless explicitly asked.
-- Show exact absolute file paths and explain unfamiliar code at the concept, runtime-flow, and
-  API/syntax levels.
-- Work one logical commit-step at a time.
-- End code steps with review, verification, a commit message, and the next step.
-- Do not start the next implementation step until the user confirms the previous commit or
-  explicitly defers it.
-- PR titles begin with the branch ordinal number.
+- Do not inspect or report staging unless explicitly asked.
+- Work one logical commit-step at a time and stop at the commit gate.
+- Show exact absolute file paths, integrated code, and explanations of unfamiliar behavior.
+- For tests and Hilt, guide the user to write the code before showing a complete solution.
+- Avoid repeating Gradle tasks when no relevant source has changed.
 
 Also read:
 
-- `PRODUCT_IDEAS.md`
-- `BUGS.md`
-- `AI_CORRESPONDENCE.md`
-- `THIRD_PARTY_CONTENT.md` when working with bundled content
+- `PRODUCT_IDEAS.md`;
+- `BUGS.md`;
+- `AI_CORRESPONDENCE.md`;
+- `THIRD_PARTY_CONTENT.md` only when working with external content.
 
 ## Repository State
 
@@ -43,7 +39,7 @@ C:\Users\Asus\AndroidStudioProjects\Razbudilnik
 Current branch:
 
 ```text
-17-regular-reader-foundation
+18-import-txt-books
 ```
 
 Base branch:
@@ -52,23 +48,16 @@ Base branch:
 master
 ```
 
-Relevant commits:
+Latest relevant commits:
 
 ```text
-71d3591 feat: load canonical book for regular reader
-cde4f3a feat: add adaptive reader text pagination
-052ee95 refactor: expose canonical reader book text
-7c80617 docs: define regular reader architecture
+922169c feat: add TXT encoding detection and decoding
+d16fb93 17. Add regular reader foundation (#17)
 09d8987 16. Add an instant debug alarm trigger (#16)
 52972b4 15. Add debug-only challenge tools (#15)
-c052ef4 14. Add Picture-in-Picture return to the active challenge (#14)
-b63447a 13. Open alarm challenge from foreground (#13)
-8848a46 12. Add bundled book content to reader challenges (#12)
 ```
 
-PR 16 is merged. Branch `17-regular-reader-foundation` was created from the synchronized `master`
-branch. Its canonical-text model, adaptive paginator, and regular-reader loading pipeline are
-committed. The adaptive reader UI is implemented and smoke-tested but not yet committed.
+Branch 17 is merged. Branch 18 is active, and its first commit-step is complete.
 
 ## Android Configuration
 
@@ -76,633 +65,196 @@ committed. The adaptive reader UI is implemented and smoke-tested but not yet co
 - `targetSdk = 36`
 - `compileSdk = 36.1`
 - Application ID: `com.ruslanataev.razbudilnik.alarm`
+- Build variants:
+    - `debug`: debuggable and includes explicit cheat/testing controls;
+    - `development`: debuggable, debug-signed, and excludes cheat controls;
+    - `release`: publication build and excludes cheat controls.
 
-The alarm-flavored application ID is intentional. Alarm and background behavior on the Tecno
-Android 14 test device became reliable only after adopting that package identity.
-
-The ringing service is a `mediaPlayback` foreground service and uses:
-
-```text
-android.permission.FOREGROUND_SERVICE
-android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK
-android:foregroundServiceType="mediaPlayback"
-```
+All variants intentionally share the application ID. On the Tecno Android 14 device, reliable alarm
+background behavior depends on the current package identity, so installing one variant replaces
+another.
 
 ## Current Product Behavior
 
-The application currently has one enabled or disabled alarm with a selected time.
+The app currently provides:
 
-When the alarm fires:
+- one enabled or disabled alarm with a selected time;
+- exact alarm scheduling, notification and full-screen alarm entry;
+- foreground ringing audio and watchdog recovery after process death;
+- Direct Boot rescheduling;
+- a legacy alarm reading challenge;
+- a standalone regular reader with canonical source text;
+- adaptive, screen-measured pagination;
+- two-finger forward and backward reader gestures;
+- separate visible and confirmed reading offsets;
+- debug-only reader, alarm, challenge-completion, and pagination-benchmark controls;
+- a no-cheat `development` build for realistic personal alarm testing.
 
-1. `AlarmReceiver` starts `AlarmRingingService`.
-2. The foreground service creates an ongoing full-screen alarm notification and plays alarm audio.
-3. `AlarmActivity` hosts the reader challenge.
-4. Reading time counts only while a finger is pressed and moves far enough.
-5. Valid movement mutes the alarm.
-6. Stopping valid movement restores sound after a one-second grace period.
-7. Every challenge page has its own timer.
-8. Completed pages may be revisited without repeating their timers.
-9. Completing the final page stops the alarm and removes the notification.
+The bundled content remains Leo Tolstoy's public-domain `Кавказский пленник`.
 
-The temporary reading requirement remains `10.seconds` per page for smoke testing.
+The alarm challenge still uses its older page model. Rebuilding the challenge around the ordinary
+reader remains later work.
 
-This is the current legacy challenge-centered reader behavior. Branches 17-19 will replace its
-page-based reader assumptions with one ordinary reader and a temporary challenge mode around the
-same canonical text.
+## Regular Reader Architecture
 
-Process-death recovery from PR 11 remains active:
+Accepted ownership:
 
-- the ringing service refreshes an `AlarmManager` watchdog;
-- process death leaves the last watchdog scheduled;
-- the recovery receiver restarts the service with the alarm time;
-- opening the launcher during an active session returns to the reader;
-- normal challenge completion cancels recovery.
+- canonical book text is stable domain content;
+- `RegularReaderViewModel` owns the current visible source offset and confirmed reading-progress
+  offset;
+- `RegularReaderScreen` owns measurements based on actual Compose constraints and text metrics;
+- generated pages are layout-dependent views over canonical text, not persisted content identity;
+- source-text offsets remain stable when orientation, dimensions, or system font scale changes;
+- the current `ArrayDeque` backward history is temporary and process-local.
 
-## Branch 17: Regular Reader Foundation
+The reader can move backward after rotation by regenerating ranges from canonical text. A future
+page-layout cache will replace repeated reconstruction and volatile history.
+
+Reader layout benchmark on the physical Tecno device:
+
+```text
+Book: War and Peace benchmark text
+Characters: 3,090,605
+Generated pages: 3,571
+Elapsed: approximately 65 seconds
+```
+
+The paginator measures bounded chunks instead of sending the complete unread remainder to
+`TextMeasurer`. The benchmark confirms that complete synchronous pagination must not block import
+or opening the reader.
+
+Accepted future generation behavior:
+
+- open the book as soon as the first page is available;
+- generate remaining page offsets incrementally;
+- show `current / ???` until generation completes;
+- allow sequential reading through generated content;
+- disable direct navigation into content whose pages are not generated yet;
+- cache offset ranges by book revision and layout-affecting configuration;
+- retain only configuration variants the user actually uses.
+
+These rules apply equally to bundled and imported books.
+
+## Branch 18: Import TXT Books
 
 Proposed PR title:
 
 ```text
-17. Add the regular reader foundation
+18. Import TXT books
 ```
 
 Goal:
 
-- make ordinary reading a real product feature available without an alarm;
-- keep both the reader and alarm settings available from the initial application screen;
-- establish one continuous reader that later challenge behavior can reuse;
-- represent positions using canonical source-text offsets rather than generated page identity;
-- provide immersive, text-first reading with gesture navigation.
-
-Accepted reader behavior:
-
-- show only book text and a thin perimeter progress indicator during normal reading;
-- hide the top and bottom system bars;
-- reveal system bars and a back-to-menu control as overlays after a short one-finger tap;
-- auto-hide those overlays after approximately three seconds;
-- keep overlay visibility from resizing or repaginating the book;
-- use a two-finger swipe left to move forward;
-- use a two-finger swipe right to move backward;
-- show whole-book progress with the perimeter line;
-- leave page-turn animation for later polish.
-
-Architecture direction:
-
-- canonical book text is stable domain content;
-- generated pages are temporary UI output determined by the current screen and system font scale;
-- source-text offsets identify displayed ranges;
-- branch 17 does not persist the bookmark yet;
-- branch 17 does not rebuild alarm challenge behavior yet.
-
-Completed commits:
-
-- exposed canonical book text through the data and domain reader models;
-- added `ReaderPageRange` and `ReaderTextPaginator` for screen-aware page generation;
-- added `GetReaderBookUseCase`, `RegularReaderUiState`, and `RegularReaderViewModel`;
-- added focused mapper, repository, model, paginator, use-case, and ViewModel tests.
-
-Current uncommitted commit-step:
-
-- `RegularReaderScreen` measures the available screen with the same text style used to render it;
-- `RegularReaderRoute` converts the canonical text into the page visible on the current device;
-- the debug reader preview now opens the regular reader route;
-- the physical-device landscape smoke test succeeded with the bundled Russian book;
-- verify the trailing comma in the `RegularReaderScreen(...)` call before the commit gate.
-
-Reader typography follow-up:
-
-- automatic hyphenation is deferred until reader polish;
-- hyphenation must use book-language metadata instead of a Russian locale hardcoded in UI;
-- typography changes may regenerate pages, while canonical source-text offsets remain stable.
-
-Planned build-type follow-up:
-
-- add a separate `development` build type in a small tooling commit after the adaptive reader UI;
-- `debug` remains debuggable and includes cheat controls;
-- `development` will be debug-signed and debuggable but compile no cheat controls;
-- `release` remains the publication build and contains no cheat controls;
-- keep the same application ID for all three variants because the Tecno alarm reliability depends
-  on the current package identity, accepting that installing one variant replaces another;
-- provide no-op `BuildVariantSetupControls` and `BuildVariantChallengeControls` implementations in
-  `src/development` because that source set must not compile the debug implementations.
+- let a user select a TXT file from the device;
+- decode its original bytes safely;
+- store canonical UTF-8 text and stable metadata in app-private storage;
+- expose imported books to the ordinary reader;
+- establish the smallest usable local library path.
 
 Out of scope:
 
-- DataStore or Room progress persistence;
-- active challenge persistence;
-- target challenge word-count selection;
-- movement timing and alarm muting in the new reader architecture;
-- completed-challenge tint;
-- navigation line, page-number input, search, and `Continue from here`;
-- reader animation and final visual polish.
+- FB2 and EPUB;
+- billing, premium entitlement, or free-import enforcement;
+- cloud upload or accounts;
+- alarm-challenge selection for imported books;
+- complete background page-cache generation;
+- reader visual polish.
 
-Planned follow-up:
-
-```text
-18-persist-regular-reader-progress
-19-reader-challenge-mode
-```
-
-Branch 18 will persist `bookId` plus a canonical source-text bookmark. Branch 19 will apply
-challenge
-timing, alarm behavior, range styling, and the automatic transition back to ordinary reading.
-
-## PR 12 Goal
-
-Proposed title:
-
-```text
-12. Add bundled public-domain reading content
-```
-
-Goal:
-
-- replace the hardcoded English paragraphs with Leo Tolstoy's `Кавказский пленник`;
-- introduce stable book and page identity;
-- load content through a domain repository;
-- keep file work off the main thread;
-- preserve the existing alarm challenge behavior.
-
-Out of scope:
-
-- user-imported files;
-- TXT file picker;
-- FB2 or EPUB parsing;
-- book selection;
-- persisted reading progress;
-- reader design polish;
-- production standalone-reader navigation;
-- debug challenge bypass.
-
-## Completed PR 12 Commits
-
-### Stable Content Models
+### Completed Commit-Step: Encoding Detection And Decoding
 
 Commit:
 
 ```text
-9e87076 feat: add stable reader content models
+922169c feat: add TXT encoding detection and decoding
 ```
 
 Implemented:
 
-- `ReaderBook` with stable ID, title, author, and complete pages;
-- stable `ReaderPage.id`;
-- challenge start index and required page count;
-- challenge selection with `drop()` and `take()`;
-- five selected pages by default;
-- unit coverage for normal selection and reaching the book end.
+- domain `ReaderTextEncoding` values for UTF-8, UTF-16 LE, UTF-16 BE, and Windows-1251;
+- deterministic BOM detection;
+- strict UTF-8 validation when no BOM exists;
+- explicit decoding with BOM removal;
+- no automatic Windows-1251 guess for ambiguous non-UTF-8 bytes;
+- eight focused decoder tests written by the user under guidance.
 
-Important distinction:
+Current decoding contract:
 
-- `ReaderBook.pages` is the complete book.
-- `ReaderChallenge.pages` is the subset selected for one alarm challenge.
-- Future persistence should identify progress with both `bookId` and `pageId`.
+1. A BOM identifies UTF-8 or UTF-16 and its byte order.
+2. Without a BOM, strictly valid UTF-8 is accepted.
+3. Other bytes currently return `null` from detection.
+4. Decoding uses an explicitly selected charset and creates a new Kotlin `String`.
+5. The original file and original bytes remain unchanged.
 
-### Reader Data Contract
+Final UX direction:
 
-Commit:
-
-```text
-c11f75a feat: add reader book data contract
-```
-
-Implemented:
-
-- suspend `ReaderBookRepository`;
-- reader DTOs;
-- DTO-to-domain mappers;
-- mapper tests.
-
-### Bundled Story Asset
-
-Commit:
-
-```text
-1adba61 feat: add bundled public-domain reader text
-```
-
-Implemented:
-
-- `app/src/main/assets/reader_books/tolstoy_caucasian_prisoner.txt`;
-- UTF-8 Russian story text;
-- removal of RoyalLib wrapper material;
-- source and public-domain documentation in `THIRD_PARTY_CONTENT.md`.
-
-### Asset Repository
-
-Commit:
-
-```text
-44b63af feat: load bundled reader book from assets
-```
-
-Implemented:
-
-- `ReaderBookRepositoryImpl` reads through `AssetManager`;
-- `withContext(Dispatchers.IO)` performs file work off the main thread;
-- stable page IDs contain the book ID and padded page number;
-- Hilt binds the implementation to the domain interface;
-- `GetReaderChallengeUseCase` loads the bundled book by stable ID;
-- repository tests cover loading, page IDs, page limits, and unknown IDs.
-
-## Current Uncommitted PR 12 Work
-
-### Asynchronous Reader Loading
-
-Current source behavior:
-
-- `ReaderViewModel` launches suspend challenge loading in `viewModelScope`;
-- challenge and UI state remain nullable until loading finishes;
-- public actions return early before content exists;
-- `ReaderRoute` shows `CircularProgressIndicator` while state is null;
-- reader timers and mute effects begin only after content is available;
-- `MainDispatcherRule` replaces `Dispatchers.Main` in local tests;
-- ViewModel tests use `runTest` and `advanceUntilIdle`.
-
-Suggested commit message:
-
-```text
-feat: load reader challenge asynchronously
-```
-
-### Pagination Regression Fix
-
-The first page originally contained only the chapter marker and two sentences because pagination
-split each paragraph into fixed blocks before filling pages.
-
-Current fix:
-
-- words are appended directly to the current page;
-- paragraph separators are preserved;
-- the beginning of a long next paragraph may use space remaining on the current page;
-- page text remains limited to 350 characters;
-- the user wrote the regression test
-  `uses remaining page space for start of next paragraph` under guidance.
-
-Suggested commit message:
-
-```text
-fix: fill reader pages across paragraph boundaries
-```
-
-## Verification Reported This Session
-
-Automated:
-
-```text
-ReaderViewModel tests: 5 passed
-ReaderBookRepositoryImpl targeted tests: passed
-testDebugUnitTest: passed
-assembleDebug: passed repeatedly
-latest assembleDebug after stopping a blocked Gradle daemon: passed in 14 seconds
-```
-
-Physical-device reader checks confirmed:
-
-- the bundled Russian story loads;
-- the challenge selects five pages;
-- meaningful finger movement controls reading time and muting;
-- tiny movement is insufficient;
-- completed-page progress survives backward navigation;
-- challenge completion still works.
-
-The pagination regression is covered automatically. A final visual check of the corrected first
-page is still desirable.
-
-## PR 13: Foreground Alarm Entry
-
-`BUGS.md` records `BUG-001` as fixed on branch `13-foreground-alarm-entry`.
-
-Cause:
-
-- Android intentionally uses a heads-up notification rather than forcing a full-screen intent over
-  an unlocked foreground application.
-- `MainActivity` previously checked active-session state only during creation and resume, so an
-  already-resumed setup screen did not react to a newly triggered alarm.
-
-Implementation:
-
-- `AlarmRuntimeEvents` uses a process-local `SharedFlow` event with one extra buffer slot.
-- `AlarmReceiver` starts `AlarmRingingService` and emits the alarm-start event.
-- `MainActivity` collects while at least `Lifecycle.State.STARTED` and opens `AlarmActivity`.
-- Persisted `AlarmSessionStore` remains the source of truth after process death; the event is not
-  replayed.
-- The ringing service initially posts the high-importance alarm notification required for
-  full-screen entry and foreground execution.
-- `AlarmActivity.onStart()` waits two seconds, then tells the service that the challenge UI is
-  visible.
-- The service replaces the alerting notification with a low-importance ongoing notification using
-  the same notification ID.
-- The delayed transition job is cancelled in `AlarmActivity.onStop()`.
+- normal users should not have to choose an encoding during ordinary imports;
+- later add confidence-based detection for common legacy encodings;
+- keep manual encoding selection as a repair option when confidence is low or text looks wrong;
+- never silently assume every non-UTF-8 Russian file is Windows-1251.
 
 Verification:
 
-- Final `.\gradlew.bat testDebugUnitTest assembleDebug`: passed in 20 seconds.
-- Final `assembleDebug` after the two-second delay: passed.
-- Foreground setup screen automatically opens the challenge.
-- Locked screen wakes and opens the challenge.
-- Unlocked background behavior keeps the Android heads-up notification and opens the challenge
-  when tapped.
-- The alerting notification transitions to the quiet ongoing notification.
-- Two seconds was selected on the physical Tecno Android 14 device after one second felt too abrupt.
-- Challenge completion still stops sound and removes the foreground notification.
-
-Residual risks accepted for PR 13:
-
-- Foreground event delivery and notification replacement are verified on a physical device but do
-  not yet have automated instrumentation coverage.
-- The two-second notification transition has been evaluated only on the Tecno Android 14 device;
-  animation timing and presentation may differ between OEMs.
-- `AlarmRuntimeEvents` is intentionally process-local and does not replay old events. Persisted
-  `AlarmSessionStore` state remains responsible for recovery after process death.
-- Add broader supported-Android-version and OEM testing later, when a repeatable device or emulator
-  test matrix exists. These are follow-up quality tasks, not blockers for this PR.
-
-## PR 14: Picture-in-Picture Return
-
-Goal:
-
-- provide a compact return surface when an active challenge is minimized;
-- keep alarm sound, notification, active-session state, and completion behavior independent of PiP;
-- never let closing PiP stop or complete the alarm.
-
-Completed commit-step 1, `efbcc1d`:
-
-- `AlarmActivity` declares PiP support in `AndroidManifest.xml`;
-- the required PiP `configChanges` prevent unnecessary activity recreation during resizing;
-- `AlarmActivity` configures `PictureInPictureParams` during `onCreate()`;
-- automatic PiP entry is enabled with `setAutoEnterEnabled(true)`;
-- seamless resizing is disabled because the reader is non-video Compose content;
-- the chosen portrait aspect ratio is `Rational(9, 16)`.
-
-Physical Tecno Android 14 verification:
-
-- pressing Home from the unlocked challenge enters PiP;
-- tapping PiP returns to the full challenge;
-- closing PiP removes only the floating activity surface;
-- alarm sound and the ongoing notification remain active after PiP closes;
-- tapping the notification restores the challenge.
-
-Accepted platform behavior:
-
-- merely opening the Recents overview does not enter PiP on the Tecno device;
-- Android may reject PiP while the keyguard is locked, even though `AlarmActivity` can be displayed
-  over the lock screen;
-- the ongoing notification remains the return path for Recents and locked-keyguard cases.
-
-Completed commit-step 2, `79440aa`:
-
-- `AlarmActivity` owns one activity-scoped `ReaderViewModel`;
-- the full `ReaderRoute` and compact PiP surface receive the same ViewModel state;
-- `AlarmActivity` tracks PiP mode and switches between the complete reader and compact surface;
-- entering PiP clears the active finger interaction so reading progress pauses and alarm sound
-  returns;
-- the compact PiP surface shows the current page, text excerpt, reading progress, alarm status, and
-  return prompt;
-- English and Russian PiP strings use Android resource localization;
-- the PiP alarm icon is an application-owned vector drawable;
-- expanding PiP restores the same page and progress;
-- closing PiP removes only the floating activity surface and leaves the alarm and ongoing
-  notification active.
-
-Final verification:
-
 ```text
-.\gradlew.bat testDebugUnitTest assembleDebug
-BUILD SUCCESSFUL in 7s
+.\gradlew.bat testDebugUnitTest
+BUILD SUCCESSFUL in 4s
 ```
 
-Physical Tecno Android 14 verification:
+## Next Commit-Step
 
-- partial reading progress is preserved when entering and leaving PiP;
-- challenge progress does not increase while PiP is visible;
-- tapping PiP restores the full reader;
-- valid finger movement continues to control progress after restoration;
-- alarm sound resumes when interaction is cleared for PiP;
-- closing PiP does not stop the alarm or remove its ongoing notification.
+Implement app-private imported-book persistence.
 
-Out of scope for PR 14:
+Before writing code:
 
-- finger trails;
-- green, amber, and red movement feedback;
-- warning edge pulses and status-message shake animation;
-- broader reader or alarm-screen visual polish.
+1. Inspect existing storage dependencies and conventions.
+2. Choose the smallest storage design that supports multiple imported books.
+3. Define stable imported-book metadata separately from canonical text content.
 
-Those behaviors remain recorded in `PRODUCT_IDEAS.md` and should be implemented in a dedicated
-reader-feedback branch rather than expanding the PiP return PR.
+Expected outcome:
 
-PR 14 was merged as `c052ef4`.
+- canonical text is stored as UTF-8 under app-private storage;
+- metadata contains at least a stable book ID, title, optional author, and text-file location;
+- the repository can save and load imported content without retaining access to the original
+  document;
+- no Android file picker or library UI is included in this commit yet.
 
-## PR 15: Debug Challenge Tools
-
-Goal:
-
-- make repeated reader and alarm testing faster;
-- keep every developer-only control absent from release builds;
-- preserve the real challenge-completion cleanup path.
-
-Completed commit `8652142`:
-
-- debug builds show `DEBUG: Finish challenge` inside `ReaderScreen`;
-- the button invokes the same `onFinishChallengeClick` callback as normal completion;
-- real completion still stops alarm sound, foreground notification, active-session state, and
-  recovery;
-- release builds substitute a no-op `BuildVariantChallengeControls` implementation.
-
-Completed commit `9ee125c`:
-
-- debug builds show `DEBUG: Open reader` on the setup screen;
-- `ReaderPreviewActivity` opens the real `ReaderRoute` without scheduling or starting an alarm;
-- completing the preview closes only the preview activity;
-- the activity and its manifest declaration both live under `src/debug`;
-- release builds substitute a no-op `BuildVariantSetupControls` implementation.
-
-Source-set behavior:
-
-- debug compiles `src/main` plus `src/debug`;
-- release compiles `src/main` plus `src/release`;
-- mutually exclusive source sets provide functions with the same names;
-- the debug manifest is merged only into the debug application;
-- the release manifest never references `ReaderPreviewActivity`.
-
-Completed documentation and hygiene commits:
-
-- `4920ac5` records a later `DEBUG: Trigger alarm` control in `PRODUCT_IDEAS.md`;
-- `30dee8a` ignores Android Studio's locally generated signed APK output under `app/release`.
-
-Automated verification:
+Likely remaining branch sequence:
 
 ```text
-.\gradlew.bat assembleDebug assembleRelease
-BUILD SUCCESSFUL in 7s
+1. Persist canonical imported text and metadata
+2. Add Android TXT file selection and import orchestration
+3. Add minimal imported-book listing and selection
+4. Connect the selected imported book to the ordinary reader
+5. Complete branch verification and PR review
 ```
 
-Debug-device verification:
+## Product Decisions To Preserve
 
-- `DEBUG: Open reader` opens the real reader without an alarm;
-- `DEBUG: Finish challenge` completes a real ringing challenge through normal cleanup;
-- sound stops, the notification disappears, the activity closes, and recovery does not restart
-  the alarm.
+- The product direction is reader-first, while wake-up reading remains the differentiating feature.
+- Imported books are intended to remain readable in ordinary mode.
+- Monetization has two preserved alternatives:
+    - one free import followed by permanent import unlock;
+    - free ordinary importing with premium required only for alarm-challenge use.
+- Do not implement entitlement checks until the user chooses the monetization boundary.
+- TXT is the first supported import format; FB2 and EPUB are separate later extensions.
+- Imported source files are never modified.
+- Canonical app-owned text is normalized to UTF-8.
+- Android Auto Backup may later provide soft restoration of a free-import entitlement, but it is
+  not strong anti-abuse enforcement.
+- Do not introduce an account, backend, phone identifier, or device-recall system for the initial
+  import implementation.
 
-Locally signed release verification:
+## Known Gaps
 
-- the release setup screen contains no `DEBUG: Open reader` control;
-- the release reader contains no `DEBUG: Finish challenge` control;
-- the normal release alarm still rings and opens the reader;
-- the release APK was signed with the existing debug keystore only for local device verification,
-  not for publication.
-
-Deferred developer tool:
-
-- add `DEBUG: Trigger alarm` later;
-- it must invoke the real receiver, ringing service, notification, active-session, and reader-entry
-  flow immediately;
-- it must remain under `src/debug` and absent from release builds.
-
-## PR 16: Instant Debug Alarm Trigger
-
-Goal:
-
-- start the complete alarm flow immediately from the debug setup screen;
-- avoid repeatedly scheduling an alarm and waiting for its wall-clock trigger during development;
-- preserve the production receiver, service, notification, reader-entry, active-session, and
-  rescheduling behavior;
-- keep the tool absent from release builds.
-
-Completed commit `525911d`:
-
-- `AlarmReceiver` owns factories for both alarm-trigger Intent forms;
-- the full factory adds the alarm hour and minute extras;
-- the identity-only factory uses the same component and action without extras;
-- `AlarmSchedulerImpl` uses the full Intent for scheduling and the identity-only Intent for
-  cancellation;
-- PendingIntent cancellation remains valid because Android identity uses the target component,
-  action, request code, and relevant flags rather than extras.
-
-Completed commit `1297655`:
-
-- debug builds show `DEBUG: Trigger alarm` on the setup screen;
-- the control reads the current local hour and minute;
-- it sends the real trigger broadcast directly to `AlarmReceiver`;
-- only the `AlarmManager` waiting period is bypassed;
-- `AlarmReceiver` still starts `AlarmRingingService`, emits `notifyAlarmStarted()`, and invokes the
-  appropriate enabled-alarm or Direct Boot rescheduling use case;
-- release builds continue using the no-op `BuildVariantSetupControls`.
-
-Documentation commits:
-
-- `55fea66` adds mandatory understanding gates before implementation commits;
-- `ac1cd0d` prevents redundant full Gradle builds after every tiny edit;
-- `716e99a` records the planned transition from a completed alarm challenge into normal reading
-  mode.
-
-Physical Tecno Android 14 verification:
-
-- `DEBUG: Trigger alarm` starts sound, the foreground notification, and the reader immediately;
-- the active challenge uses the real runtime flow;
-- `DEBUG: Finish challenge` still performs normal cleanup;
-- sound stops, the notification disappears, and recovery does not restart the alarm;
-- the existing reader-preview control remains unaffected.
-
-Final automated verification:
-
-```text
-.\gradlew.bat testDebugUnitTest assembleDebug assembleRelease
-BUILD SUCCESSFUL in 8s
-```
-
-The branch has no remaining source changes.
-
-## IBM PC Android Studio Reminder
-
-At the beginning of the next session on the IBM PC, remind the user to configure Android Studio
-consistently with the ASUS PC:
-
-1. Enable removing trailing spaces when files are saved.
-2. Enable ensuring that every saved file ends with a line break.
-
-This is currently an IDE configuration reminder. The repository does not yet contain an
-`.editorconfig` that enforces these rules automatically.
-
-## Latest Branch 17 Progress
-
-The regular reader now has:
-
-- adaptive text pagination based on measured Compose constraints;
-- two-finger forward and backward page gestures;
-- in-memory backward-page history owned by `RegularReaderViewModel`;
-- rotation-safe backward navigation, verified by the user on the device;
-- reader entry through the app navigation graph;
-- a debug-only reader entry point and a separate no-cheat `development` build variant.
-
-Ownership decision:
-
-- `RegularReaderViewModel` owns canonical reading position and page-navigation history;
-- `RegularReaderScreen` owns screen measurement, text measurement, and the temporary page range
-  calculated for the current layout constraints;
-- pagination output is a presentation concern because font metrics, orientation, and available
-  width/height determine which source-text range fits on screen;
-- the page range is not persisted reading progress. It is a temporary rendering result.
-
-Current working changes still require their normal commit gate. Do not begin another implementation
-step until the navigation and rotation changes have been reviewed, tested, and committed.
-
-## Next Session
-
-Continue branch 17:
-
-1. Finish the commit gate for reader navigation and rotation-safe history.
-2. Keep the reader content inside the safe drawing area so the system navigation bar cannot cover
-   the last lines of text.
-3. Preserve the later product decision: reader entry shows system bars; a one-finger tap reveals
-   the overlay menu/back control and bars, which auto-hide afterward.
-4. Add immersive system-bar and overlay-control behavior as a separate step after safe-area
-   handling.
-
-## Current PR And Planned Follow-Up
-
-The current branch is:
-
-```text
-17-regular-reader-foundation
-```
-
-Proposed title:
-
-```text
-17. Add the regular reader foundation
-```
-
-Its goal is to make ordinary reading available independently of alarms and establish the continuous,
-offset-based reader that later challenge behavior will reuse. Canonical text, adaptive pagination,
-and the reader loading pipeline are committed; the first adaptive reading screen is awaiting its
-commit gate.
-
-Likely later sequence:
-
-```text
-Persist regular reader progress
-Rebuild the alarm challenge as a reader mode
-Import user TXT books
-Add FB2/EPUB support
-```
-
-## Known Product Gaps
-
-- Multiple alarms are not implemented.
-- Bundled content currently consists of one public-domain Russian story.
-- User-imported books are not implemented.
+- User file selection and imported-book persistence are not implemented yet.
 - Reader progress is not persisted.
-- Recents and locked-keyguard exits still rely on the launcher or ongoing notification.
+- The full page-layout cache is not implemented.
+- The alarm challenge has not been rebuilt around the ordinary reader.
+- Multiple alarms are not implemented.
+- Reader UI remains intentionally minimal.
+- Snooze, Wake Up Check, backup re-ringing, and alternative challenges are not implemented.
+- Required challenge reading time remains `10.seconds` for smoke testing.
+- Direct Boot and watchdog recovery have been verified only on one physical Android 14 Tecno
+  device.
 - PiP behavior has physical-device coverage but no automated instrumentation coverage.
-- Required reading time remains `10.seconds` for smoke testing.
-- Movement uses finger motion on screen, not physical walking.
-- Reader UI is intentionally bare MVP.
-- Snooze is not implemented.
-- Post-dismissal Wake Up Check is not implemented.
-- Backup re-ringing is not implemented.
-- Alternative challenges are not implemented.
-- Power-off and force-stop prevention are not portable Android guarantees.
 - Notification still uses `android.R.drawable.ic_lock_idle_alarm`.
-- Direct Boot and watchdog recovery have been tested only on one physical Android 14 Tecno device.
+- Power-off and force-stop prevention are not portable Android guarantees.
